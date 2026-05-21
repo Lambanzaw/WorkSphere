@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% block title %}Employees{% endblock %}
+{% block page_title %}Employee Management{% endblock %}
+
+{% block topbar_actions %}
+<button onclick="printEmployees()" class="btn btn-outline btn-sm">Print / Export PDF</button>
+<a href="{% url 'employee_create' %}" class="btn btn-primary btn-sm">+ Add Employee</a>
+{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-body" style="padding:16px 20px;">
+    <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+      <div style="flex:1;min-width:200px;">
+        <label class="form-label">Search</label>
+        <input type="text" name="search" value="{{ search }}" class="form-control" placeholder="Name, ID, or email...">
+      </div>
+      <div style="min-width:160px;">
+        <label class="form-label">Department</label>
+        <select name="department" class="form-select">
+          <option value="">All Departments</option>
+          {% for dept in departments %}
+          <option value="{{ dept.pk }}" {% if dept_filter == dept.pk|stringformat:"s" %}selected{% endif %}>{{ dept.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="min-width:140px;">
+        <label class="form-label">Status</label>
+        <select name="status" class="form-select">
+          <option value="">All Status</option>
+          <option value="active"     {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+          <option value="inactive"   {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+          <option value="terminated" {% if status_filter == 'terminated' %}selected{% endif %}>Terminated</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">Filter</button>
+      <a href="{% url 'employee_list' %}" class="btn btn-outline">Clear</a>
+    </form>
+  </div>
+</div>
+
+<div class="card" id="employee-table-card">
+  <div class="card-header">
+    <span class="card-title">All Employees ({{ employees.count }})</span>
+  </div>
+  <div class="table-wrapper">
+    <table class="ws-table" id="employee-table">
+      <thead>
+        <tr>
+          <th>Employee ID</th>
+          <th>Name</th>
+          <th>Department</th>
+          <th>Position</th>
+          <th>Email</th>
+          <th>Status</th>
+          <th class="no-print">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for emp in employees %}
+        <tr>
+          <td><span style="font-family:monospace;font-weight:600;color:var(--primary);">{{ emp.employee_id }}</span></td>
+          <td>
+            <div style="display:flex;align-items:center;gap:.75rem;">
+              {% if emp.photo %}
+                <img src="{{ emp.photo.url }}"
+                  style="width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid var(--border);">
+              {% else %}
+                <div style="width:38px;height:38px;border-radius:50%;background:var(--primary-bg);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:var(--primary);flex-shrink:0;">
+                  {{ emp.first_name|first }}{{ emp.last_name|first }}
+                </div>
+              {% endif %}
+              <div>
+                <div style="font-weight:600;">{{ emp.get_full_name }}</div>
+                <div style="font-size:.75rem;color:var(--text-muted);">Since {{ emp.date_hired|date:"Y" }}</div>
+              </div>
+            </div>
+          </td>
+          <td>{{ emp.department|default:"—" }}</td>
+          <td>{{ emp.position }}</td>
+          <td style="font-size:.8rem;">{{ emp.email }}</td>
+          <td><span class="badge badge-{{ emp.status }}">{{ emp.get_status_display }}</span></td>
+          <td class="no-print">
+            <div style="display:flex;gap:6px;">
+              <a href="{% url 'employee_detail' emp.pk %}" class="btn btn-outline btn-sm">View</a>
+              <a href="{% url 'employee_edit' emp.pk %}"   class="btn btn-outline btn-sm">Edit</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7">
+            <div class="empty-state">
+              <h3>No employees found</h3>
+              <p>Try adjusting your search filters</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<style>
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 1.5cm;
+  }
+
+  body * { visibility: hidden; }
+
+  #print-area, #print-area * { visibility: visible; }
+
+  #print-area {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+  }
+
+  .no-print { display: none !important; }
+}
+</style>
+
+<div id="print-area" style="display:none;">
+  <div style="font-family:Arial,sans-serif;padding:0;">
+
+    <div style="background:#4F46E5;color:white;padding:24px 32px;border-radius:8px 8px 0 0;display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-size:1.4rem;font-weight:800;letter-spacing:.02em;">WorkSphere</div>
+        <div style="font-size:.85rem;opacity:.8;margin-top:2px;">HR Management System</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:1rem;font-weight:700;">Employee Directory</div>
+        <div style="font-size:.8rem;opacity:.8;" id="print-date"></div>
+      </div>
+    </div>
+
+    <div style="background:#f8f8ff;border:1px solid #e0e0f0;border-top:none;padding:10px 32px;display:flex;gap:24px;">
+      <div style="font-size:.8rem;color:#555;">
+        Total Employees: <strong id="print-count">0</strong>
+      </div>
+      <div style="font-size:.8rem;color:#555;" id="print-filter-info"></div>
+    </div>
+
+    <table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;font-size:.8rem;margin-top:0;">
+      <thead>
+        <tr style="background:#4F46E5;color:white;">
+          <th style="padding:10px 14px;text-align:left;font-weight:600;">#</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:600;">Employee ID</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:600;">Full Name</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:600;">Department</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:600;">Position</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:600;">Email</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:600;">Date Hired</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:600;">Status</th>
+        </tr>
+      </thead>
+      <tbody id="print-tbody"></tbody>
+    </table>
+
+    <div style="margin-top:24px;padding:12px 32px;border-top:2px solid #4F46E5;display:flex;justify-content:space-between;font-size:.75rem;color:#888;">
+      <span>WorkSphere HR Management System — Confidential</span>
+      <span id="print-footer-date"></span>
+    </div>
+
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+var employeeData = [
+  {% for emp in employees %}
+  {
+    id:       "{{ emp.employee_id }}",
+    name:     "{{ emp.get_full_name }}",
+    dept:     "{{ emp.department|default:'—' }}",
+    position: "{{ emp.position }}",
+    email:    "{{ emp.email }}",
+    hired:    "{{ emp.date_hired|date:'M d, Y' }}",
+    status:   "{{ emp.get_status_display }}"
+  }{% if not forloop.last %},{% endif %}
+  {% endfor %}
+];
+
+function printEmployees() {
+  var tbody  = document.getElementById('print-tbody');
+  var now    = new Date();
+  var dateStr = now.toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
+
+  document.getElementById('print-date').textContent        = dateStr;
+  document.getElementById('print-footer-date').textContent = 'Printed: ' + dateStr;
+  document.getElementById('print-count').textContent       = employeeData.length;
+
+  var search = "{{ search|default:'' }}";
+  var dept   = "{{ dept_filter|default:'' }}";
+  var status = "{{ status_filter|default:'' }}";
+  var filterParts = [];
+  if (search) filterParts.push('Search: "' + search + '"');
+  if (dept)   filterParts.push('Department filter applied');
+  if (status) filterParts.push('Status: ' + status);
+  document.getElementById('print-filter-info').textContent = filterParts.length ? filterParts.join(' · ') : 'Showing all employees';
+
+  tbody.innerHTML = '';
+  employeeData.forEach(function(emp, i) {
+    var bg = i % 2 === 0 ? '#ffffff' : '#f5f5ff';
+    var statusColor = emp.status === 'Active' ? '#065F46' : '#92400E';
+    var statusBg    = emp.status === 'Active' ? '#D1FAE5' : '#FEF3C7';
+    tbody.innerHTML +=
+      '<tr style="background:' + bg + ';">' +
+        '<td style="padding:9px 14px;border-bottom:1px solid #eee;color:#888;">' + (i + 1) + '</td>' +
+        '<td style="padding:9px 14px;border-bottom:1px solid #eee;font-weight:600;font-family:monospace;color:#4F46E5;">' + emp.id + '</td>' +
+        '<td style="padding:9px 14px;border-bottom:1px solid #eee;font-weight:600;">' + emp.name + '</td>' +
+        '<td style="padding:9px 14px;border-bottom:1px solid #eee;">' + emp.dept + '</td>' +
+        '<td style="padding:9px 14px;border-bottom:1px solid #eee;">' + emp.position + '</td>' +
+        '<td style="padding:9px 14px;border-bottom:1px solid #eee;font-size:.75rem;">' + emp.email + '</td>' +
+        '<td style="padding:9px 14px;border-bottom:1px solid #eee;">' + emp.hired + '</td>' +
+        '<td style="padding:9px 14px;border-bottom:1px solid #eee;">' +
+          '<span style="background:' + statusBg + ';color:' + statusColor + ';padding:2px 10px;border-radius:999px;font-size:.72rem;font-weight:600;">' + emp.status + '</span>' +
+        '</td>' +
+      '</tr>';
+  });
+
+  document.getElementById('print-area').style.display = 'block';
+  window.print();
+  document.getElementById('print-area').style.display = 'none';
+}
+</script>
+{% endblock %}
+{% endblock %}

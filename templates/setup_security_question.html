@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Setup Security Question — WorkSphere{% endblock %}
+{% block page_title %}Setup Security Question{% endblock %}
+
+{% block content %}
+<div style="max-width:500px;">
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Setup Security Question</h2>
+    </div>
+    <div class="card-body">
+      <p style="color:var(--gray-500);font-size:.9rem;margin-bottom:1.5rem;">
+        This is used to verify your identity if you forget your password.
+      </p>
+
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }}" style="margin-bottom:1rem;">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label">Security Question</label>
+          {{ form.question }}
+          {% if form.question.errors %}
+            <p class="form-error">{{ form.question.errors|join:", " }}</p>
+          {% endif %}
+        </div>
+        <div class="form-group" style="margin-top:1rem;">
+          <label class="form-label">Your Answer</label>
+          {{ form.answer }}
+          {% if form.answer.errors %}
+            <p class="form-error">{{ form.answer.errors|join:", " }}</p>
+          {% endif %}
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top:1.5rem;">Save Security Question</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

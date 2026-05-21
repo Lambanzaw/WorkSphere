@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+{% block title %}Generate Payroll — WorkSphere{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Generate Payroll</h1>
+    <p class="page-subtitle">Compute and generate payroll for a specific employee and period</p>
+  </div>
+  <a href="{% url 'payroll_list' %}" class="btn btn-secondary">
+    ← Payroll Records
+  </a>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 360px;gap:1.5rem;align-items:start;">
+
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Payroll Parameters</h2>
+    </div>
+    <div class="card-body">
+
+      {% if errors %}
+        <div class="alert alert-danger" style="margin-bottom:1.5rem;">
+          {% for e in errors %}
+            <p style="margin:0 0 .25rem;">{{ e }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if preview %}
+        <div class="alert alert-success" style="margin-bottom:1.5rem;">
+          <strong>Payroll Preview Ready</strong> — Review the computation below and confirm to save.
+        </div>
+
+        <div class="info-grid" style="grid-template-columns:repeat(2,1fr);margin-bottom:1.5rem;">
+          <div class="info-item">
+            <span class="info-label">Employee</span>
+            <span class="info-value">{{ preview.employee.get_full_name }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Period</span>
+            <span class="info-value">
+              {% for m in months %}{% if m.0 == preview.month %}{{ m.1 }}{% endif %}{% endfor %}
+              {{ preview.year }}
+            </span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Basic Salary</span>
+            <span class="info-value">₱{{ preview.basic_salary|floatformat:2 }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Working Days</span>
+            <span class="info-value">{{ preview.working_days }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Days Present</span>
+            <span class="info-value">{{ preview.days_present }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Days Absent</span>
+            <span class="info-value" style="color:var(--danger);">{{ preview.days_absent }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Late Minutes Total</span>
+            <span class="info-value">{{ preview.total_late_minutes }} min</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Overtime Hours</span>
+            <span class="info-value" style="color:var(--success);">{{ preview.total_overtime_hours|floatformat:2 }} hrs</span>
+          </div>
+        </div>
+
+        <div style="background:var(--gray-50);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;">
+          <h3 style="font-size:1rem;font-weight:600;margin-bottom:1rem;color:var(--gray-700);">
+            Payroll Computation Breakdown
+          </h3>
+          <div style="display:flex;flex-direction:column;gap:.5rem;font-size:.925rem;">
+            <div style="display:flex;justify-content:space-between;">
+              <span>Basic Salary</span>
+              <span>₱{{ preview.basic_salary|floatformat:2 }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;color:var(--success);">
+              <span>+ Overtime Pay</span>
+              <span>₱{{ preview.overtime_pay|floatformat:2 }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;color:var(--success);">
+              <span>+ Bonuses</span>
+              <span>₱{{ preview.bonuses|floatformat:2 }}</span>
+            </div>
+            <div style="border-top:1px dashed var(--gray-200);margin:.25rem 0;"></div>
+            <div style="display:flex;justify-content:space-between;color:var(--danger);">
+              <span>− Absence Deductions</span>
+              <span>₱{{ preview.absence_deduction|floatformat:2 }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;color:var(--danger);">
+              <span>− Late Deductions</span>
+              <span>₱{{ preview.late_deduction|floatformat:2 }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;color:var(--danger);">
+              <span>− SSS Contribution (auto)</span>
+              <span>₱{{ preview.sss_contribution|floatformat:2 }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;color:var(--danger);">
+              <span>− PhilHealth Contribution (auto)</span>
+              <span>₱{{ preview.philhealth_contribution|floatformat:2 }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;color:var(--danger);">
+              <span>− Pag-IBIG Contribution (auto)</span>
+              <span>₱{{ preview.pagibig_contribution|floatformat:2 }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;color:var(--danger);">
+              <span>− Withholding Tax</span>
+              <span>₱{{ preview.withholding_tax|floatformat:2 }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;color:var(--danger);">
+              <span>− Other Deductions</span>
+              <span>₱{{ preview.other_deductions|floatformat:2 }}</span>
+            </div>
+            <div style="border-top:2px solid var(--gray-200);padding-top:.75rem;display:flex;justify-content:space-between;font-weight:700;font-size:1.1rem;">
+              <span>Net Salary</span>
+              <span style="color:var(--primary);">₱{{ preview.net_salary|floatformat:2 }}</span>
+            </div>
+          </div>
+        </div>
+
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="employee" value="{{ preview.employee.pk }}">
+          <input type="hidden" name="month" value="{{ preview.month }}">
+          <input type="hidden" name="year" value="{{ preview.year }}">
+          <input type="hidden" name="withholding_tax" value="{{ form_data.withholding_tax }}">
+          <input type="hidden" name="other_deductions" value="{{ form_data.other_deductions }}">
+          <input type="hidden" name="bonuses" value="{{ form_data.bonuses }}">
+          <input type="hidden" name="confirm" value="1">
+
+          <div style="display:flex;gap:1rem;">
+            <button type="submit" class="btn btn-primary">
+              Confirm & Save Payroll
+            </button>
+            <a href="{% url 'payroll_generate' %}" class="btn btn-secondary">
+              Recalculate
+            </a>
+          </div>
+        </form>
+
+      {% else %}
+        <form method="post">
+          {% csrf_token %}
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.employee.id_for_label }}">
+              Employee <span style="color:var(--danger);">*</span>
+            </label>
+            {{ form.employee }}
+            {% if form.employee.errors %}
+              <p class="form-error">{{ form.employee.errors|join:", " }}</p>
+            {% endif %}
+          </div>
+
+          <div class="form-row" style="grid-template-columns:1fr 1fr;">
+            <div class="form-group">
+              <label class="form-label" for="{{ form.month.id_for_label }}">
+                Month <span style="color:var(--danger);">*</span>
+              </label>
+              {{ form.month }}
+              {% if form.month.errors %}
+                <p class="form-error">{{ form.month.errors|join:", " }}</p>
+              {% endif %}
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="{{ form.year.id_for_label }}">
+                Year <span style="color:var(--danger);">*</span>
+              </label>
+              {{ form.year }}
+              {% if form.year.errors %}
+                <p class="form-error">{{ form.year.errors|join:", " }}</p>
+              {% endif %}
+            </div>
+          </div>
+
+          <div style="background:var(--gray-50);border-radius:10px;padding:1rem;margin-bottom:1rem;">
+            <p style="font-size:.85rem;font-weight:600;color:var(--gray-700);margin-bottom:.5rem;">
+              Government Contributions
+            </p>
+            <p style="font-size:.8rem;color:var(--gray-500);margin-bottom:0;">
+              SSS, PhilHealth, and Pag-IBIG are automatically computed based on the employee's basic salary.
+            </p>
+          </div>
+
+          <div class="form-row" style="grid-template-columns:1fr 1fr;">
+            <div class="form-group">
+              <label class="form-label" for="{{ form.withholding_tax.id_for_label }}">
+                Withholding Tax (₱)
+              </label>
+              {{ form.withholding_tax }}
+              {% if form.withholding_tax.errors %}
+                <p class="form-error">{{ form.withholding_tax.errors|join:", " }}</p>
+              {% endif %}
+              <p class="form-help">Per BIR tax table.</p>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="{{ form.other_deductions.id_for_label }}">
+                Other Deductions (₱)
+              </label>
+              {{ form.other_deductions }}
+              {% if form.other_deductions.errors %}
+                <p class="form-error">{{ form.other_deductions.errors|join:", " }}</p>
+              {% endif %}
+              <p class="form-help">Any additional deductions.</p>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.bonuses.id_for_label }}">
+              Bonuses (₱)
+            </label>
+            {{ form.bonuses }}
+            {% if form.bonuses.errors %}
+              <p class="form-error">{{ form.bonuses.errors|join:", " }}</p>
+            {% endif %}
+            <p class="form-help">13th month, performance bonus, etc.</p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.notes.id_for_label }}">
+              Notes
+            </label>
+            {{ form.notes }}
+          </div>
+
+          <div style="margin-top:1.5rem;">
+            <button type="submit" class="btn btn-primary">
+              Preview Payroll
+            </button>
+          </div>
+        </form>
+      {% endif %}
+
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Payroll Rules</h2>
+      </div>
+      <div class="card-body">
+        <ul style="margin:0;padding-left:1.25rem;font-size:.875rem;color:var(--gray-600);line-height:2;">
+          <li>Daily rate = Basic ÷ Working days</li>
+          <li>Absences deduct <strong>1 daily rate</strong> each</li>
+          <li>Approved leaves <strong>do not</strong> deduct</li>
+          <li>Late deducts <strong>hourly rate × late fraction</strong></li>
+          <li>Overtime = hourly × <strong>1.25</strong> (approved only)</li>
+          <li>Net salary cannot go <strong>below ₱0</strong></li>
+          <li>Payroll is <strong>monthly only</strong></li>
+          <li>Cannot regenerate a <strong>finalized</strong> payroll</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:1rem;">
+      <div class="card-header">
+        <h2 class="card-title">Auto-Computed Deductions (PH)</h2>
+      </div>
+      <div class="card-body">
+        <div style="font-size:.85rem;color:var(--gray-600);line-height:2;">
+          <div style="display:flex;justify-content:space-between;">
+            <span>SSS</span><span>Based on salary bracket</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span>PhilHealth</span><span>2.5% of basic salary</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span>Pag-IBIG</span><span>Max ₱100</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span>Withholding Tax</span><span>Manual — Per BIR table</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

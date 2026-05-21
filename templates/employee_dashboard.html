@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}My Dashboard{% endblock %}
+{% block page_title %}My Dashboard{% endblock %}
+
+{% block topbar_actions %}
+{% if not today_attendance %}
+<a href="{% url 'clock_in' %}" class="btn btn-success btn-sm">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+  Clock In
+</a>
+{% elif today_attendance and not today_attendance.time_out %}
+<a href="{% url 'clock_out' %}" class="btn btn-outline btn-sm">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+  Clock Out
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- Welcome -->
+<div style="margin-bottom: 24px;">
+  <h1 style="font-size: 1.4rem;">Good day, {{ employee.first_name }}! 👋</h1>
+  <p style="color: var(--text-secondary);">{{ today|date:"l, F d, Y" }}</p>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-card-header">
+      <span class="stat-card-label">Today's Status</span>
+      <div class="stat-icon {% if today_attendance %}green{% else %}amber{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+      </div>
+    </div>
+    {% if today_attendance %}
+    <div class="stat-value" style="font-size: 1.1rem;">{{ today_attendance.time_in|time:"h:i A" }}</div>
+    <div class="stat-sub">
+      Clocked in · {% if today_attendance.time_out %}Out: {{ today_attendance.time_out|time:"h:i A" }}{% else %}Still working{% endif %}
+    </div>
+    {% else %}
+    <div class="stat-value" style="font-size: 1rem; color: var(--text-muted);">Not yet</div>
+    <div class="stat-sub">Haven't clocked in today</div>
+    {% endif %}
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-card-header">
+      <span class="stat-card-label">Position</span>
+      <div class="stat-icon indigo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      </div>
+    </div>
+    <div class="stat-value" style="font-size: 1rem;">{{ employee.position }}</div>
+    <div class="stat-sub">{{ employee.department }}</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-card-header">
+      <span class="stat-card-label">Pending Leaves</span>
+      <div class="stat-icon amber">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+      </div>
+    </div>
+    <div class="stat-value">{{ pending_leaves }}</div>
+    <div class="stat-sub">Awaiting approval</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-card-header">
+      <span class="stat-card-label">Latest Net Pay</span>
+      <div class="stat-icon green">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </div>
+    </div>
+    {% if latest_payroll %}
+    <div class="stat-value" style="font-size: 1.2rem;">₱{{ latest_payroll.net_salary|floatformat:0 }}</div>
+    <div class="stat-sub">{{ latest_payroll.get_month_name }}</div>
+    {% else %}
+    <div class="stat-value" style="font-size: 1rem; color: var(--text-muted);">—</div>
+    <div class="stat-sub">No payslip yet</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Recent Attendance -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Recent Attendance</span>
+      <a href="{% url 'my_attendance' %}" class="btn btn-outline btn-sm">View All</a>
+    </div>
+    <div class="table-wrapper">
+      <table class="ws-table">
+        <thead><tr><th>Date</th><th>In</th><th>Out</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for att in recent_attendance %}
+          <tr>
+            <td>{{ att.date|date:"M d" }}</td>
+            <td>{{ att.time_in|time:"h:i A"|default:"—" }}</td>
+            <td>{{ att.time_out|time:"h:i A"|default:"—" }}</td>
+            <td><span class="badge badge-{{ att.status }}">{{ att.get_status_display }}</span></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-center text-muted" style="padding: 24px;">No records yet</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent Leaves -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">My Leave Requests</span>
+      <a href="{% url 'leave_create' %}" class="btn btn-primary btn-sm">+ File Leave</a>
+    </div>
+    <div class="table-wrapper">
+      <table class="ws-table">
+        <thead><tr><th>Type</th><th>Dates</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for leave in recent_leaves %}
+          <tr>
+            <td>{{ leave.leave_type.name }}</td>
+            <td style="font-size: 0.8rem;">{{ leave.start_date|date:"M d" }} – {{ leave.end_date|date:"M d" }}</td>
+            <td><span class="badge badge-{{ leave.status }}">{{ leave.get_status_display }}</span></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" class="text-center text-muted" style="padding: 24px;">No leave requests</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

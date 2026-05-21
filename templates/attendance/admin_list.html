@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Attendance{% endblock %}
+{% block page_title %}Attendance Management{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'admin_attendance_override' %}" class="btn btn-outline btn-sm">+ Manual Entry</a>
+{% endblock %}
+
+{% block content %}
+<!-- Filter -->
+<div class="card" style="margin-bottom: 16px;">
+  <div class="card-body" style="padding: 14px 20px;">
+    <form method="get" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
+      <div>
+        <label class="form-label">Date</label>
+        <input type="date" name="date" value="{{ date_filter }}" class="form-control">
+      </div>
+      <div style="min-width: 200px;">
+        <label class="form-label">Employee</label>
+        <select name="employee" class="form-select">
+          <option value="">All Employees</option>
+          {% for emp in employees %}
+          <option value="{{ emp.pk }}" {% if emp_filter == emp.pk|stringformat:"s" %}selected{% endif %}>{{ emp.get_full_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+      <a href="{% url 'admin_attendance_list' %}" class="btn btn-outline btn-sm">Clear</a>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Attendance Records ({{ records.count }})</span>
+  </div>
+  <div class="table-wrapper">
+    <table class="ws-table">
+      <thead><tr><th>Employee</th><th>Date</th><th>Time In</th><th>Time Out</th><th>Hours</th><th>Status</th><th>Override</th><th></th></tr></thead>
+      <tbody>
+        {% for att in records %}
+        <tr>
+          <td>
+            <div style="font-weight: 600;">{{ att.employee.get_full_name }}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ att.employee.department }}</div>
+          </td>
+          <td>{{ att.date|date:"M d, Y" }}</td>
+          <td>{{ att.time_in|time:"h:i A"|default:"—" }}</td>
+          <td>{{ att.time_out|time:"h:i A"|default:"—" }}</td>
+          <td>{{ att.get_hours_worked|floatformat:1 }}h</td>
+          <td><span class="badge badge-{{ att.status }}">{{ att.get_status_display }}</span></td>
+          <td>
+            {% if att.admin_override %}
+            <span style="font-size: 0.72rem; color: var(--accent); font-weight: 600;">OVERRIDE</span>
+            {% endif %}
+          </td>
+          <td><a href="{% url 'admin_attendance_edit' att.pk %}" class="btn btn-outline btn-sm">Edit</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center text-muted" style="padding: 40px;">No attendance records for this date.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}My Attendance{% endblock %}
+{% block page_title %}My Attendance{% endblock %}
+
+{% block topbar_actions %}
+{% if not today_attendance %}
+<a href="{% url 'clock_in' %}" class="btn btn-success btn-sm">Clock In</a>
+{% elif today_attendance and not today_attendance.time_out %}
+<a href="{% url 'clock_out' %}" class="btn btn-outline btn-sm">Clock Out</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- Stats -->
+<div class="stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 20px;">
+  <div class="stat-card">
+    <div class="stat-card-header"><span class="stat-card-label">Days Present</span><div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg></div></div>
+    <div class="stat-value">{{ total_present }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-header"><span class="stat-card-label">Days Late</span><div class="stat-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg></div></div>
+    <div class="stat-value">{{ total_late }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-header"><span class="stat-card-label">Days Absent</span><div class="stat-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div></div>
+    <div class="stat-value">{{ total_absent }}</div>
+  </div>
+</div>
+
+<!-- Filter -->
+<div class="card" style="margin-bottom: 16px;">
+  <div class="card-body" style="padding: 14px 20px;">
+    <form method="get" style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
+      <div>
+        <label class="form-label">Month</label>
+        <select name="month" class="form-select" style="min-width: 130px;">
+          {% for m_num, m_name in months %}
+          <option value="{{ m_num }}" {% if m_num == month %}selected{% endif %}>{{ m_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Year</label>
+        <select name="year" class="form-select">
+          {% for y in years %}
+          <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrapper">
+    <table class="ws-table">
+      <thead><tr><th>Date</th><th>Day</th><th>Time In</th><th>Time Out</th><th>Hours</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for att in attendance_records %}
+        <tr>
+          <td>{{ att.date|date:"M d, Y" }}</td>
+          <td style="color: var(--text-muted);">{{ att.date|date:"D" }}</td>
+          <td>{{ att.time_in|time:"h:i A"|default:"—" }}</td>
+          <td>{{ att.time_out|time:"h:i A"|default:"—" }}</td>
+          <td>{{ att.get_hours_worked|floatformat:1 }}h</td>
+          <td>
+            <span class="badge badge-{{ att.status }}">{{ att.get_status_display }}</span>
+            {% if att.is_late %}<span style="font-size: 0.7rem; color: var(--accent); margin-left: 6px;">+{{ att.get_late_minutes }}min late</span>{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center text-muted" style="padding: 40px;">No attendance records for this period.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

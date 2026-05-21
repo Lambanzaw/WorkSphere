@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Edit — {{ employee.get_full_name }}{% endblock %}
+{% block page_title %}Edit Employee{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px;">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Edit: {{ employee.get_full_name }}</span>
+      <a href="{% url 'employee_detail' employee.pk %}" class="btn btn-outline btn-sm">← Back</a>
+    </div>
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div class="alert alert-error">{% for e in form.non_field_errors %}<span>{{ e }}</span>{% endfor %}</div>
+        {% endif %}
+
+        <h3 style="font-size:0.875rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:16px;">Employee Photo</h3>
+
+        <div class="form-group" style="margin-bottom:1.5rem;">
+          {% if employee.photo %}
+          <div style="margin-bottom:.75rem;display:flex;align-items:center;gap:1rem;">
+            <img src="{{ employee.photo.url }}"
+              style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid var(--border);">
+            <div>
+              <div style="font-size:.8rem;font-weight:600;">Current Photo</div>
+              <div style="font-size:.75rem;color:var(--text-muted);">Upload a new one to replace it.</div>
+            </div>
+          </div>
+          {% else %}
+          <div style="margin-bottom:.75rem;display:flex;align-items:center;gap:1rem;">
+            <div style="width:72px;height:72px;border-radius:50%;background:var(--primary-bg);display:flex;align-items:center;justify-content:center;font-size:1.25rem;font-weight:700;color:var(--primary);">
+              {{ employee.first_name|first }}{{ employee.last_name|first }}
+            </div>
+            <div>
+              <div style="font-size:.8rem;font-weight:600;">No Photo</div>
+              <div style="font-size:.75rem;color:var(--text-muted);">Upload a photo for this employee.</div>
+            </div>
+          </div>
+          {% endif %}
+          {{ form.photo }}
+          <p style="font-size:.75rem;color:var(--text-muted);margin-top:.25rem;">Accepted formats: JPG, PNG. Max 2MB.</p>
+          {% for e in form.photo.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+        </div>
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:20px 0;">
+        <h3 style="font-size:0.875rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:16px;">Personal Information</h3>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">First Name *</label>
+            {{ form.first_name }}
+            {% for e in form.first_name.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Last Name *</label>
+            {{ form.last_name }}
+            {% for e in form.last_name.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email *</label>
+            {{ form.email }}
+            {% for e in form.email.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Contact Number</label>
+            {{ form.contact_number }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Address</label>
+          {{ form.address }}
+        </div>
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:20px 0;">
+        <h3 style="font-size:0.875rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:16px;">Employment Details</h3>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Department *</label>
+            {{ form.department }}
+            {% for e in form.department.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Position *</label>
+            {{ form.position }}
+            {% for e in form.position.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date Hired *</label>
+            {{ form.date_hired }}
+            {% for e in form.date_hired.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Basic Monthly Salary (₱) *</label>
+            {{ form.basic_salary }}
+            {% for e in form.basic_salary.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            {{ form.status }}
+          </div>
+        </div>
+
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
+          <a href="{% url 'employee_detail' employee.pk %}" class="btn btn-outline">Cancel</a>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,362 @@
+{% extends 'base.html' %}
+{% block title %}Reports — WorkSphere{% endblock %}
+
+{% block content %}
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;flex-wrap:wrap;gap:1rem;">
+  <div>
+    <h1 style="font-size:1.6rem;font-weight:800;color:var(--text-primary);margin-bottom:.25rem;">HR Reports</h1>
+    <p style="color:var(--text-secondary);font-size:.9rem;">Analytics and insights for {{ selected_month_name }} {{ selected_year }}</p>
+  </div>
+  <form method="get" style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+    <select name="report" style="padding:.6rem .9rem;border:1px solid var(--border-light);border-radius:10px;font-size:.875rem;background:white;outline:none;">
+      <option value="attendance" {% if report_type == 'attendance' %}selected{% endif %}>Attendance Report</option>
+      <option value="directory"  {% if report_type == 'directory' %}selected{% endif %}>Employee Directory</option>
+      <option value="payroll"    {% if report_type == 'payroll' %}selected{% endif %}>Payroll Summary</option>
+    </select>
+    <select name="month" style="padding:.6rem .9rem;border:1px solid var(--border-light);border-radius:10px;font-size:.875rem;background:white;outline:none;">
+      {% for m in months %}
+        <option value="{{ m.0 }}" {% if m.0 == selected_month %}selected{% endif %}>{{ m.1 }}</option>
+      {% endfor %}
+    </select>
+    <select name="year" style="padding:.6rem .9rem;border:1px solid var(--border-light);border-radius:10px;font-size:.875rem;background:white;outline:none;">
+      {% for y in years %}
+        <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" style="padding:.6rem 1.2rem;background:var(--primary);color:white;border:none;border-radius:10px;font-weight:600;font-size:.875rem;cursor:pointer;">Apply</button>
+  </form>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;margin-bottom:2rem;">
+  <div style="background:white;border-radius:16px;padding:1.5rem;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);position:relative;overflow:hidden;">
+    <div style="position:absolute;top:0;left:0;right:0;height:4px;background:var(--primary);border-radius:16px 16px 0 0;"></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <p style="font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.4rem;">Total Employees</p>
+        <div style="font-size:2.25rem;font-weight:800;color:var(--text-primary);line-height:1;">{{ stats.total_employees }}</div>
+        <p style="font-size:.8rem;color:var(--text-muted);margin-top:.3rem;">{{ stats.active_employees }} active</p>
+      </div>
+      <div style="width:46px;height:46px;border-radius:12px;background:var(--primary-bg);display:flex;align-items:center;justify-content:center;font-size:1.3rem;">👥</div>
+    </div>
+  </div>
+  <div style="background:white;border-radius:16px;padding:1.5rem;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);position:relative;overflow:hidden;">
+    <div style="position:absolute;top:0;left:0;right:0;height:4px;background:#22C55E;border-radius:16px 16px 0 0;"></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <p style="font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.4rem;">Avg Attendance</p>
+        <div style="font-size:2.25rem;font-weight:800;color:#22C55E;line-height:1;">{{ stats.avg_attendance_rate|floatformat:1 }}%</div>
+        <p style="font-size:.8rem;color:var(--text-muted);margin-top:.3rem;">This month</p>
+      </div>
+      <div style="width:46px;height:46px;border-radius:12px;background:#D1FAE5;display:flex;align-items:center;justify-content:center;font-size:1.3rem;">📅</div>
+    </div>
+  </div>
+  <div style="background:white;border-radius:16px;padding:1.5rem;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);position:relative;overflow:hidden;">
+    <div style="position:absolute;top:0;left:0;right:0;height:4px;background:#F59E0B;border-radius:16px 16px 0 0;"></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <p style="font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.4rem;">Leaves Taken</p>
+        <div style="font-size:2.25rem;font-weight:800;color:#F59E0B;line-height:1;">{{ stats.leaves_this_month }}</div>
+        <p style="font-size:.8rem;color:var(--text-muted);margin-top:.3rem;">Approved this month</p>
+      </div>
+      <div style="width:46px;height:46px;border-radius:12px;background:#FEF3C7;display:flex;align-items:center;justify-content:center;font-size:1.3rem;">🏖️</div>
+    </div>
+  </div>
+  <div style="background:white;border-radius:16px;padding:1.5rem;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);position:relative;overflow:hidden;">
+    <div style="position:absolute;top:0;left:0;right:0;height:4px;background:#8B5CF6;border-radius:16px 16px 0 0;"></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <p style="font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.4rem;">Total Payroll</p>
+        <div style="font-size:1.6rem;font-weight:800;color:#8B5CF6;line-height:1;">₱{{ stats.total_payroll|floatformat:2 }}</div>
+        <p style="font-size:.8rem;color:var(--text-muted);margin-top:.3rem;">Net payout this month</p>
+      </div>
+      <div style="width:46px;height:46px;border-radius:12px;background:#EDE9FE;display:flex;align-items:center;justify-content:center;font-size:1.3rem;">💰</div>
+    </div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;">
+
+  <div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden;">
+    <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
+      <h2 style="font-size:1rem;font-weight:700;color:var(--text-primary);">Attendance by Department</h2>
+      <span style="font-size:.82rem;color:var(--text-muted);">{{ selected_month_name }} {{ selected_year }}</span>
+    </div>
+    <div style="padding:1.5rem;position:relative;">
+      {% if has_attendance_data %}
+        <canvas id="attendanceChart" style="width:100%;max-height:220px;"></canvas>
+        {% else %}
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
+          <div style="font-size:3rem;margin-bottom:.75rem;">📊</div>
+          <div style="font-weight:700;font-size:.95rem;color:var(--text-primary);margin-bottom:.35rem;">No Attendance Data</div>
+          <p style="font-size:.82rem;color:var(--text-muted);">No attendance records for this period.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden;">
+    <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
+      <h2 style="font-size:1rem;font-weight:700;color:var(--text-primary);">Leave Breakdown</h2>
+      <span style="font-size:.82rem;color:var(--text-muted);">By type this month</span>
+    </div>
+    <div style="padding:1.5rem;display:flex;align-items:center;justify-content:center;min-height:260px;">
+      {% if has_leave_data %}
+        <div style="max-width:260px;width:100%;">
+          <canvas id="leaveChart"></canvas>
+        </div>
+      {% else %}
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
+          <div style="font-size:3rem;margin-bottom:.75rem;">🏖️</div>
+          <div style="font-weight:700;font-size:.95rem;color:var(--text-primary);margin-bottom:.35rem;">No Leave Data</div>
+          <p style="font-size:.82rem;color:var(--text-muted);">No approved leaves for this period.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:1.5rem;">
+  <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border-light);">
+    <h2 style="font-size:1rem;font-weight:700;color:var(--text-primary);">Department Attendance Summary</h2>
+  </div>
+  {% if dept_stats %}
+  <div style="padding:1rem 1.5rem;display:flex;flex-direction:column;gap:.6rem;">
+    {% for d in dept_stats %}
+    <div style="display:grid;grid-template-columns:1.5fr repeat(4,auto) 200px;gap:1rem;align-items:center;padding:.875rem 1rem;background:#FAFAFA;border-radius:10px;border:1px solid var(--border-light);">
+      <div style="font-weight:600;color:var(--text-primary);">{{ d.department }}</div>
+      <div style="text-align:center;">
+        <div style="font-size:.7rem;color:var(--text-muted);">Employees</div>
+        <div style="font-weight:700;">{{ d.employee_count }}</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:.7rem;color:var(--text-muted);">Present</div>
+        <div style="font-weight:700;color:#22C55E;">{{ d.present_count }}</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:.7rem;color:var(--text-muted);">Absent</div>
+        <div style="font-weight:700;color:#EF4444;">{{ d.absent_count }}</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:.7rem;color:var(--text-muted);">Late</div>
+        <div style="font-weight:700;color:#F59E0B;">{{ d.late_count }}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.75rem;">
+        <div style="flex:1;background:var(--border-light);border-radius:999px;height:8px;">
+          <div style="width:{{ d.attendance_rate }}%;background:#22C55E;height:8px;border-radius:999px;"></div>
+        </div>
+        <span style="font-size:.82rem;font-weight:700;min-width:36px;color:var(--text-primary);">{{ d.attendance_rate }}%</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div style="padding:2.5rem;text-align:center;color:var(--text-muted);">
+    <div style="font-size:2rem;margin-bottom:.5rem;">📋</div>
+    <p>No data available for this period.</p>
+  </div>
+  {% endif %}
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;">
+  <div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden;">
+    <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;">
+      <h2 style="font-size:1rem;font-weight:700;color:var(--text-primary);">Most Absences</h2>
+      <span style="font-size:.82rem;color:var(--text-muted);">This month</span>
+    </div>
+    <div style="padding:.75rem 1rem;display:flex;flex-direction:column;gap:.5rem;">
+      {% for e in top_absent %}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:.75rem 1rem;background:#FAFAFA;border-radius:10px;">
+        <div>
+          <div style="font-weight:600;font-size:.9rem;color:var(--text-primary);">{{ e.name }}</div>
+          <div style="font-size:.78rem;color:var(--text-muted);">{{ e.dept }}</div>
+        </div>
+        <span style="background:#FEE2E2;color:#991B1B;font-size:.8rem;font-weight:700;padding:.25rem .75rem;border-radius:999px;">{{ e.absences }} days</span>
+      </div>
+      {% empty %}
+      <p style="padding:1rem;text-align:center;color:var(--text-muted);font-size:.875rem;">No absence data this month.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden;">
+    <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;">
+      <h2 style="font-size:1rem;font-weight:700;color:var(--text-primary);">Most Late Occurrences</h2>
+      <span style="font-size:.82rem;color:var(--text-muted);">This month</span>
+    </div>
+    <div style="padding:.75rem 1rem;display:flex;flex-direction:column;gap:.5rem;">
+      {% for e in top_late %}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:.75rem 1rem;background:#FAFAFA;border-radius:10px;">
+        <div>
+          <div style="font-weight:600;font-size:.9rem;color:var(--text-primary);">{{ e.name }}</div>
+          <div style="font-size:.78rem;color:var(--text-muted);">{{ e.dept }}</div>
+        </div>
+        <span style="background:#FEF3C7;color:#92400E;font-size:.8rem;font-weight:700;padding:.25rem .75rem;border-radius:999px;">{{ e.late_count }}x late</span>
+      </div>
+      {% empty %}
+      <p style="padding:1rem;text-align:center;color:var(--text-muted);font-size:.875rem;">No late data this month.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden;">
+  <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;">
+    <h2 style="font-size:1rem;font-weight:700;color:var(--text-primary);">Recent Admin Actions</h2>
+    <span style="font-size:.82rem;color:var(--text-muted);">Last 20 entries</span>
+  </div>
+  <div style="padding:.75rem 1rem;display:flex;flex-direction:column;gap:.5rem;">
+    {% for log in audit_logs %}
+    <div style="display:grid;grid-template-columns:auto 1fr auto;gap:1rem;align-items:center;padding:.75rem 1rem;background:#FAFAFA;border-radius:10px;">
+      <div style="font-size:.75rem;color:var(--text-muted);white-space:nowrap;">{{ log.timestamp|date:"M d, Y h:i A" }}</div>
+      <div>
+        <span style="font-weight:600;font-size:.875rem;color:var(--text-primary);">{{ log.user.get_full_name|default:log.user.username }}</span>
+        <span style="font-size:.82rem;color:var(--text-secondary);margin-left:.5rem;">{{ log.description|truncatechars:80 }}</span>
+      </div>
+      <span style="font-size:.72rem;font-weight:600;padding:.2rem .65rem;border-radius:999px;white-space:nowrap;
+        {% if 'approved' in log.action %}background:#D1FAE5;color:#065F46;
+        {% elif 'rejected' in log.action or 'delete' in log.action %}background:#FEE2E2;color:#991B1B;
+        {% elif 'login' in log.action %}background:#EEF2FF;color:#4F46E5;
+        {% else %}background:#F3F4F6;color:#6B7280;{% endif %}">
+        {{ log.action|title }}
+      </span>
+    </div>
+    {% empty %}
+    <p style="padding:1.5rem;text-align:center;color:var(--text-muted);">No audit log entries found.</p>
+    {% endfor %}
+  </div>
+</div>
+
+{% if report_type == 'directory' %}
+<div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden;margin-top:1.5rem;">
+  <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
+    <h2 style="font-size:1rem;font-weight:700;color:var(--text-primary);">Employee Directory</h2>
+    <span style="font-size:.82rem;color:var(--text-muted);">{{ employee_directory.count }} employees</span>
+  </div>
+  <table style="width:100%;border-collapse:collapse;font-size:.875rem;">
+    <thead>
+      <tr>
+        <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Employee ID</th>
+        <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Name</th>
+        <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Department</th>
+        <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Position</th>
+        <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Date Hired</th>
+        <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Email</th>
+        <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for emp in employee_directory %}
+      <tr style="border-bottom:1px solid #F3F4F6;">
+        <td style="padding:.875rem 1rem;color:#374151;">{{ emp.employee_id }}</td>
+        <td style="padding:.875rem 1rem;font-weight:600;color:#111827;">{{ emp.get_full_name }}</td>
+        <td style="padding:.875rem 1rem;color:#374151;">{{ emp.department.name|default:"—" }}</td>
+        <td style="padding:.875rem 1rem;color:#374151;">{{ emp.position }}</td>
+        <td style="padding:.875rem 1rem;color:#374151;">{{ emp.date_hired|date:"M d, Y" }}</td>
+        <td style="padding:.875rem 1rem;color:#374151;">{{ emp.email }}</td>
+        <td style="padding:.875rem 1rem;">
+          {% if emp.status == 'active' %}<span style="background:#D1FAE5;color:#065F46;font-size:.72rem;font-weight:600;padding:.2rem .65rem;border-radius:999px;">Active</span>
+          {% elif emp.status == 'on_leave' %}<span style="background:#FEF3C7;color:#92400E;font-size:.72rem;font-weight:600;padding:.2rem .65rem;border-radius:999px;">On Leave</span>
+          {% else %}<span style="background:#F3F4F6;color:#6B7280;font-size:.72rem;font-weight:600;padding:.2rem .65rem;border-radius:999px;">{{ emp.get_status_display }}</span>{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" style="padding:2rem;text-align:center;color:#9CA3AF;">No employees found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if report_type == 'payroll' %}
+<div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden;margin-top:1.5rem;">
+  <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
+    <h2 style="font-size:1rem;font-weight:700;color:var(--text-primary);">Payroll Summary — {{ selected_month_name }} {{ selected_year }}</h2>
+    <span style="font-size:.82rem;color:var(--text-muted);">{{ payroll_summary.count }} records</span>
+  </div>
+  <table style="width:100%;border-collapse:collapse;font-size:.875rem;">
+    <thead>
+      <tr>
+        <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Employee</th>
+        <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Department</th>
+        <th style="padding:.75rem 1rem;text-align:right;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Basic</th>
+        <th style="padding:.75rem 1rem;text-align:right;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Deductions</th>
+        <th style="padding:.75rem 1rem;text-align:right;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Net Pay</th>
+        <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in payroll_summary %}
+      <tr style="border-bottom:1px solid #F3F4F6;">
+        <td style="padding:.875rem 1rem;font-weight:600;color:#111827;">{{ p.employee.get_full_name }}</td>
+        <td style="padding:.875rem 1rem;color:#374151;">{{ p.employee.department.name|default:"—" }}</td>
+        <td style="padding:.875rem 1rem;text-align:right;color:#374151;">₱{{ p.basic_salary|floatformat:2 }}</td>
+        <td style="padding:.875rem 1rem;text-align:right;color:#EF4444;">₱{{ p.total_deductions|floatformat:2 }}</td>
+        <td style="padding:.875rem 1rem;text-align:right;font-weight:700;color:#4F46E5;">₱{{ p.net_salary|floatformat:2 }}</td>
+        <td style="padding:.875rem 1rem;">
+          {% if p.status == 'finalized' %}<span style="background:#D1FAE5;color:#065F46;font-size:.72rem;font-weight:600;padding:.2rem .65rem;border-radius:999px;">Finalized</span>
+          {% else %}<span style="background:#FEF3C7;color:#92400E;font-size:.72rem;font-weight:600;padding:.2rem .65rem;border-radius:999px;">Draft</span>{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="padding:2rem;text-align:center;color:#9CA3AF;">No payroll records for this period.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var attLabels   = {{ attendance_labels|safe }};
+  var attPresent  = {{ attendance_present_data|safe }};
+  var attAbsent   = {{ attendance_absent_data|safe }};
+  var attLate     = {{ attendance_late_data|safe }};
+  var leaveLabels = {{ leave_type_labels|safe }};
+  var leaveData   = {{ leave_type_data|safe }};
+
+  if (attLabels.length > 0 && document.getElementById('attendanceChart')) {
+    new Chart(document.getElementById('attendanceChart'), {
+      type: 'bar',
+      data: {
+        labels: attLabels,
+        datasets: [
+          { label:'Present', data:attPresent, backgroundColor:'#22C55E', borderRadius:6 },
+          { label:'Absent',  data:attAbsent,  backgroundColor:'#EF4444', borderRadius:6 },
+          { label:'Late',    data:attLate,    backgroundColor:'#F59E0B', borderRadius:6 }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position:'top' } },
+        scales:  { y: { beginAtZero:true, ticks:{ stepSize:1 } } }
+      }
+    });
+  }
+
+  if (leaveLabels.length > 0 && document.getElementById('leaveChart')) {
+    new Chart(document.getElementById('leaveChart'), {
+      type: 'doughnut',
+      data: {
+        labels: leaveLabels,
+        datasets:[{
+          data: leaveData,
+          backgroundColor:['#4F46E5','#22C55E','#F59E0B','#EF4444','#8B5CF6'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { position:'bottom', labels:{ padding:16 } } },
+        cutout: '65%'
+      }
+    });
+  }
+});
+</script>
+{% endblock %}
