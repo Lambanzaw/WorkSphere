@@ -1,0 +1,21 @@
+{% extends 'core/base.html' %}
+{% block title %}Delete Employee{% endblock %}
+{% block page_title %}Delete Employee{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-title">Delete Employee</div>
+</div>
+
+<div class="form-box">
+  <p style="font-size:13px;margin-bottom:15px;">
+    Are you sure you want to delete <strong>{{ employee.get_full_name }}</strong> ({{ employee.employee_id }})?
+    This action cannot be undone.
+  </p>
+  <form method="post" style="display:flex;gap:8px;">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Yes, Delete</button>
+    <a href="{% url 'employee_detail' employee.pk %}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+{% endblock %}

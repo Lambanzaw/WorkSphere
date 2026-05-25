@@ -102,10 +102,13 @@ USE_I18N = True
 USE_TZ = True
 
 # ─── Static Files ──────────────────────────────────────────────────────────────
+STATICFILES_DIRS = [
+    BASE_DIR / 'core' / 'static',
+    BASE_DIR / 'static',
+]
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 # ─── Media Files ───────────────────────────────────────────────────────────────
 MEDIA_URL = '/media/'

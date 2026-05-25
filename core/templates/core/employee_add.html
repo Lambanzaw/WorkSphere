@@ -1,0 +1,91 @@
+{% extends 'core/base.html' %}
+{% block title %}Add Employee{% endblock %}
+{% block page_title %}Add Employee{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">Add Employee</div>
+    <div class="page-sub">Fill in the details below</div>
+  </div>
+  <a href="{% url 'employee_list' %}" class="btn btn-secondary">Back to List</a>
+</div>
+
+<div class="form-box">
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="form-row">
+      <div>
+        <label>First Name *</label>
+        <input type="text" name="first_name" required>
+      </div>
+      <div>
+        <label>Last Name *</label>
+        <input type="text" name="last_name" required>
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label>Employee ID *</label>
+        <input type="text" name="employee_id" placeholder="e.g. EMP-001" required>
+      </div>
+      <div>
+        <label>Email *</label>
+        <input type="email" name="email" required>
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label>Department *</label>
+        <select name="department" required>
+          <option value="">-- Select --</option>
+          {% for d in departments %}
+          <option value="{{ d.pk }}">{{ d.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Position *</label>
+        <input type="text" name="position" required>
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label>Date Hired *</label>
+        <input type="date" name="date_hired" required>
+      </div>
+      <div>
+        <label>Basic Salary (₱)</label>
+        <input type="number" name="basic_salary" step="0.01" placeholder="0.00">
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label>Phone</label>
+        <input type="text" name="phone">
+      </div>
+      <div>
+        <label>Status</label>
+        <select name="status">
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="on_leave">On Leave</option>
+        </select>
+      </div>
+    </div>
+
+    <label style="margin-top:12px;">Address</label>
+    <textarea name="address" rows="2"></textarea>
+
+    <div class="btn-row">
+      <button type="submit" class="btn btn-primary">Save Employee</button>
+      <a href="{% url 'employee_list' %}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

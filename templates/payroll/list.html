@@ -3,61 +3,77 @@
 
 {% block content %}
 
-<!-- Page Header -->
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;">
   <div>
     <h1 style="font-size:1.6rem;font-weight:800;color:var(--text-primary);margin-bottom:.25rem;">Payroll Records</h1>
     <p style="color:var(--text-secondary);font-size:.9rem;">View, manage and finalize employee payroll</p>
   </div>
-  <a href="{% url 'payroll_generate' %}" style="
-    display:inline-flex;align-items:center;gap:.5rem;
-    background:var(--primary);color:white;
-    padding:.65rem 1.4rem;border-radius:10px;
-    font-weight:600;font-size:.9rem;
-    box-shadow:0 4px 12px rgba(79,70,229,0.3);
-    text-decoration:none;transition:all .2s;"
-    onmouseenter="this.style.background='var(--primary-dark)';"
-    onmouseleave="this.style.background='var(--primary)';">
+  <a href="{% url 'payroll_generate' %}" style="display:inline-flex;align-items:center;gap:.5rem;background:var(--primary);color:white;padding:.65rem 1.4rem;border-radius:10px;font-weight:600;font-size:.9rem;box-shadow:0 4px 12px rgba(79,70,229,0.3);text-decoration:none;transition:all .2s;"
+    onmouseenter="this.style.opacity='.85';"
+    onmouseleave="this.style.opacity='1';">
     + Generate Payroll
   </a>
 </div>
 
-<!-- Stats Cards -->
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;margin-bottom:2rem;">
-  <div style="background:white;border-radius:16px;padding:1.5rem;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);position:relative;overflow:hidden;">
-    <div style="position:absolute;top:0;left:0;right:0;height:4px;background:var(--primary);border-radius:16px 16px 0 0;"></div>
-    <p style="font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.4rem;">Total Records</p>
-    <div style="font-size:2.25rem;font-weight:800;color:var(--text-primary);line-height:1;">{{ total_count|default:"0" }}</div>
-    <p style="font-size:.8rem;color:var(--text-muted);margin-top:.3rem;">All time</p>
+  <div style="background:white;border-radius:16px;padding:1.5rem;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <p style="font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.4rem;">Total Records</p>
+        <div style="font-size:2.25rem;font-weight:800;color:var(--text-primary);line-height:1;">{{ total_count|default:"0" }}</div>
+        <p style="font-size:.8rem;color:var(--text-muted);margin-top:.3rem;">All time</p>
+      </div>
+      <div style="width:46px;height:46px;border-radius:12px;background:#EEF2FF;display:flex;align-items:center;justify-content:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+      </div>
+    </div>
   </div>
-  <div style="background:white;border-radius:16px;padding:1.5rem;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);position:relative;overflow:hidden;">
-    <div style="position:absolute;top:0;left:0;right:0;height:4px;background:#F59E0B;border-radius:16px 16px 0 0;"></div>
-    <p style="font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.4rem;">Draft</p>
-    <div style="font-size:2.25rem;font-weight:800;color:#F59E0B;line-height:1;">{{ draft_count|default:"0" }}</div>
-    <p style="font-size:.8rem;color:var(--text-muted);margin-top:.3rem;">Not finalized</p>
+  <div style="background:white;border-radius:16px;padding:1.5rem;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <p style="font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.4rem;">Draft</p>
+        <div style="font-size:2.25rem;font-weight:800;color:#F59E0B;line-height:1;">{{ draft_count|default:"0" }}</div>
+        <p style="font-size:.8rem;color:var(--text-muted);margin-top:.3rem;">Not finalized</p>
+      </div>
+      <div style="width:46px;height:46px;border-radius:12px;background:#FEF3C7;display:flex;align-items:center;justify-content:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+    </div>
   </div>
-  <div style="background:white;border-radius:16px;padding:1.5rem;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);position:relative;overflow:hidden;">
-    <div style="position:absolute;top:0;left:0;right:0;height:4px;background:#22C55E;border-radius:16px 16px 0 0;"></div>
-    <p style="font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.4rem;">Finalized</p>
-    <div style="font-size:2.25rem;font-weight:800;color:#22C55E;line-height:1;">{{ finalized_count|default:"0" }}</div>
-    <p style="font-size:.8rem;color:var(--text-muted);margin-top:.3rem;">Locked records</p>
+  <div style="background:white;border-radius:16px;padding:1.5rem;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <p style="font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.4rem;">Finalized</p>
+        <div style="font-size:2.25rem;font-weight:800;color:#22C55E;line-height:1;">{{ finalized_count|default:"0" }}</div>
+        <p style="font-size:.8rem;color:var(--text-muted);margin-top:.3rem;">Locked records</p>
+      </div>
+      <div style="width:46px;height:46px;border-radius:12px;background:#D1FAE5;display:flex;align-items:center;justify-content:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg>
+      </div>
+    </div>
   </div>
-  <div style="background:white;border-radius:16px;padding:1.5rem;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);position:relative;overflow:hidden;">
-    <div style="position:absolute;top:0;left:0;right:0;height:4px;background:#8B5CF6;border-radius:16px 16px 0 0;"></div>
-    <p style="font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.4rem;">Total Payout</p>
-    <div style="font-size:1.6rem;font-weight:800;color:#8B5CF6;line-height:1;">₱{{ month_total|floatformat:2|default:"0.00" }}</div>
-    <p style="font-size:.8rem;color:var(--text-muted);margin-top:.3rem;">This month net</p>
+  <div style="background:white;border-radius:16px;padding:1.5rem;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <p style="font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.4rem;">Total Payout</p>
+        <div style="font-size:1.6rem;font-weight:800;color:#8B5CF6;line-height:1;">₱{{ month_total|floatformat:2|default:"0.00" }}</div>
+        <p style="font-size:.8rem;color:var(--text-muted);margin-top:.3rem;">This month net</p>
+      </div>
+      <div style="width:46px;height:46px;border-radius:12px;background:#EDE9FE;display:flex;align-items:center;justify-content:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- Main Card -->
 <div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden;">
 
-  <!-- Filter Bar -->
   <div style="padding:1rem 1.5rem;border-bottom:1px solid var(--border-light);background:#FAFAFA;">
     <form method="get" style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
       <div style="position:relative;flex:1;min-width:200px;max-width:280px;">
-        <span style="position:absolute;left:.85rem;top:50%;transform:translateY(-50%);color:var(--text-muted);">🔍</span>
+        <span style="position:absolute;left:.75rem;top:50%;transform:translateY(-50%);color:var(--text-muted);">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </span>
         <input type="text" name="q" value="{{ search_query }}"
           placeholder="Search employee..."
           style="width:100%;padding:.6rem .75rem .6rem 2.2rem;border:1px solid var(--border-light);border-radius:10px;font-size:.875rem;outline:none;background:white;"
@@ -86,23 +102,22 @@
     </form>
   </div>
 
-  <!-- Payroll Items -->
   {% if payrolls %}
   <div style="padding:1rem 1.5rem;display:flex;flex-direction:column;gap:.75rem;">
     {% for p in payrolls %}
-    <div style="
-      border:1px solid var(--border-light);border-radius:12px;padding:1.1rem 1.25rem;
-      display:grid;grid-template-columns:48px 1fr auto auto auto;gap:1rem;align-items:center;
-      background:#FAFAFA;transition:all .2s;"
+    <div style="border:1px solid var(--border-light);border-radius:12px;padding:1.1rem 1.25rem;display:grid;grid-template-columns:48px 1fr auto auto auto;gap:1rem;align-items:center;background:#FAFAFA;transition:all .2s;"
       onmouseenter="this.style.background='white';this.style.borderColor='#C7D2FE';this.style.boxShadow='var(--shadow)';"
       onmouseleave="this.style.background='#FAFAFA';this.style.borderColor='var(--border-light)';this.style.boxShadow='none';">
 
-      <!-- Icon -->
-      <div style="width:44px;height:44px;border-radius:10px;background:var(--primary-bg);display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;">
-        💰
-      </div>
+      {% if p.employee.photo %}
+        <img src="{{ p.employee.photo.url }}"
+          style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid var(--border-light);">
+      {% else %}
+        <div style="width:44px;height:44px;border-radius:10px;background:var(--primary-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.8rem;font-weight:700;color:var(--primary);">
+          {{ p.employee.first_name|first }}{{ p.employee.last_name|first }}
+        </div>
+      {% endif %}
 
-      <!-- Info -->
       <div>
         <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.3rem;flex-wrap:wrap;">
           <span style="font-weight:700;font-size:.95rem;color:var(--text-primary);">{{ p.employee.get_full_name }}</span>
@@ -110,54 +125,42 @@
           <span style="background:var(--primary-bg);color:var(--primary);font-size:.72rem;font-weight:600;padding:.15rem .55rem;border-radius:999px;">
             {{ p.get_month_display }} {{ p.year }}
           </span>
-          <span style="
-            font-size:.72rem;font-weight:600;padding:.15rem .55rem;border-radius:999px;
+          <span style="font-size:.72rem;font-weight:600;padding:.15rem .55rem;border-radius:999px;
             {% if p.status == 'draft' %}background:#FEF3C7;color:#92400E;{% else %}background:#D1FAE5;color:#065F46;{% endif %}">
             {% if p.status == 'draft' %}Draft{% else %}Finalized{% endif %}
           </span>
         </div>
-        <div style="font-size:.82rem;color:var(--text-secondary);display:flex;gap:.5rem 1rem;flex-wrap:wrap;">
-          <span>🏢 {{ p.employee.department.name|default:"—" }}</span>
+        <div style="font-size:.82rem;color:var(--text-secondary);display:flex;gap:.5rem 1rem;flex-wrap:wrap;align-items:center;">
+          <span style="display:inline-flex;align-items:center;gap:.3rem;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            {{ p.employee.department.name|default:"—" }}
+          </span>
           <span>Basic: ₱{{ p.basic_salary|floatformat:2 }}</span>
           <span style="color:#EF4444;">Deductions: ₱{{ p.total_deductions|floatformat:2 }}</span>
           <span style="color:#22C55E;">Bonuses: ₱{{ p.bonuses|floatformat:2 }}</span>
         </div>
       </div>
 
-      <!-- Net Salary -->
       <div style="text-align:right;flex-shrink:0;">
         <div style="font-size:.72rem;color:var(--text-muted);">Net Pay</div>
         <div style="font-size:1.15rem;font-weight:800;color:var(--primary);white-space:nowrap;">₱{{ p.net_salary|floatformat:2 }}</div>
       </div>
 
-      <!-- Attendance summary -->
       <div style="text-align:center;flex-shrink:0;">
         <div style="font-size:1.1rem;font-weight:700;color:var(--text-primary);">{{ p.days_present }}/{{ p.working_days }}</div>
         <div style="font-size:.7rem;color:var(--text-muted);">days present</div>
       </div>
 
-      <!-- Actions -->
       <div style="display:flex;gap:.5rem;flex-shrink:0;">
-        <a href="{% url 'payroll_detail' p.pk %}" style="
-          display:inline-flex;align-items:center;
-          background:white;color:var(--text-secondary);
-          border:1px solid var(--border-light);
-          padding:.45rem .9rem;border-radius:8px;
-          font-size:.82rem;font-weight:600;
-          text-decoration:none;white-space:nowrap;transition:all .2s;"
+        <a href="{% url 'payroll_detail' p.pk %}" style="display:inline-flex;align-items:center;background:white;color:var(--text-secondary);border:1px solid var(--border-light);padding:.45rem .9rem;border-radius:8px;font-size:.82rem;font-weight:600;text-decoration:none;white-space:nowrap;transition:all .2s;"
           onmouseenter="this.style.borderColor='var(--primary)';this.style.color='var(--primary)';"
           onmouseleave="this.style.borderColor='var(--border-light)';this.style.color='var(--text-secondary)';">
           View
         </a>
         {% if p.status == 'draft' %}
-        <a href="{% url 'payroll_finalize' p.pk %}" style="
-          display:inline-flex;align-items:center;
-          background:var(--primary);color:white;
-          padding:.45rem .9rem;border-radius:8px;
-          font-size:.82rem;font-weight:600;
-          text-decoration:none;white-space:nowrap;transition:all .2s;"
-          onmouseenter="this.style.background='var(--primary-dark)';"
-          onmouseleave="this.style.background='var(--primary)';">
+        <a href="{% url 'payroll_finalize' p.pk %}" style="display:inline-flex;align-items:center;background:var(--primary);color:white;padding:.45rem .9rem;border-radius:8px;font-size:.82rem;font-weight:600;text-decoration:none;white-space:nowrap;transition:all .2s;"
+          onmouseenter="this.style.opacity='.85';"
+          onmouseleave="this.style.opacity='1';">
           Finalize
         </a>
         {% endif %}
@@ -168,14 +171,12 @@
 
   {% else %}
   <div style="padding:4rem 2rem;text-align:center;">
-    <div style="font-size:3.5rem;margin-bottom:1rem;">💼</div>
+    <div style="width:56px;height:56px;border-radius:14px;background:var(--border-light);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+    </div>
     <h3 style="font-size:1.1rem;font-weight:700;color:var(--text-primary);margin-bottom:.5rem;">No Payroll Records</h3>
     <p style="color:var(--text-muted);font-size:.9rem;margin-bottom:1.5rem;">No records found. Generate payroll to get started.</p>
-    <a href="{% url 'payroll_generate' %}" style="
-      display:inline-flex;align-items:center;gap:.5rem;
-      background:var(--primary);color:white;
-      padding:.65rem 1.4rem;border-radius:10px;
-      font-weight:600;font-size:.9rem;text-decoration:none;">
+    <a href="{% url 'payroll_generate' %}" style="display:inline-flex;align-items:center;gap:.5rem;background:var(--primary);color:white;padding:.65rem 1.4rem;border-radius:10px;font-weight:600;font-size:.9rem;text-decoration:none;">
       + Generate Payroll
     </a>
   </div>

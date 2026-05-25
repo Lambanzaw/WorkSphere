@@ -1,0 +1,87 @@
+{% extends 'core/base.html' %}
+{% block title %}Edit Employee{% endblock %}
+{% block page_title %}Edit Employee{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">Edit Employee</div>
+    <div class="page-sub">{{ employee.get_full_name }}</div>
+  </div>
+  <a href="{% url 'employee_detail' employee.pk %}" class="btn btn-secondary">Cancel</a>
+</div>
+
+<div class="form-box">
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="form-row">
+      <div>
+        <label>First Name *</label>
+        <input type="text" name="first_name" value="{{ employee.first_name }}" required>
+      </div>
+      <div>
+        <label>Last Name *</label>
+        <input type="text" name="last_name" value="{{ employee.last_name }}" required>
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label>Email *</label>
+        <input type="email" name="email" value="{{ employee.email }}" required>
+      </div>
+      <div>
+        <label>Phone</label>
+        <input type="text" name="phone" value="{{ employee.phone }}">
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label>Department</label>
+        <select name="department">
+          <option value="">-- Select --</option>
+          {% for d in departments %}
+          <option value="{{ d.pk }}" {% if employee.department_id == d.pk %}selected{% endif %}>{{ d.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Position *</label>
+        <input type="text" name="position" value="{{ employee.position }}" required>
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label>Date Hired *</label>
+        <input type="date" name="date_hired" value="{{ employee.date_hired|date:'Y-m-d' }}" required>
+      </div>
+      <div>
+        <label>Basic Salary (₱)</label>
+        <input type="number" name="basic_salary" step="0.01" value="{{ employee.basic_salary }}">
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label>Status</label>
+        <select name="status">
+          <option value="active"   {% if employee.status == 'active' %}selected{% endif %}>Active</option>
+          <option value="inactive" {% if employee.status == 'inactive' %}selected{% endif %}>Inactive</option>
+          <option value="on_leave" {% if employee.status == 'on_leave' %}selected{% endif %}>On Leave</option>
+        </select>
+      </div>
+    </div>
+
+    <label style="margin-top:12px;">Address</label>
+    <textarea name="address" rows="2">{{ employee.address }}</textarea>
+
+    <div class="btn-row">
+      <button type="submit" class="btn btn-primary">Save Changes</button>
+      <a href="{% url 'employee_detail' employee.pk %}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

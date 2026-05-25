@@ -1,0 +1,67 @@
+{% extends 'core/base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-title">Dashboard</div>
+<div class="page-sub">System overview — {{ today }}</div>
+
+<div class="stats-row">
+  <div class="stat-box">
+    <div class="num">{{ total_employees }}</div>
+    <div class="lbl">Active Employees</div>
+  </div>
+  <div class="stat-box">
+    <div class="num">{{ present_today }}</div>
+    <div class="lbl">Present Today</div>
+  </div>
+  <div class="stat-box">
+    <div class="num">—</div>
+    <div class="lbl">Pending Leaves</div>
+  </div>
+  <div class="stat-box">
+    <div class="num">—</div>
+    <div class="lbl">Payroll This Month</div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+  <div>
+    <p style="font-size:13px;font-weight:bold;margin-bottom:8px;">Today's Attendance</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Time In</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in recent_attendance %}
+        <tr>
+          <td>{{ r.employee.get_full_name }}</td>
+          <td>{% if r.time_in %}{{ r.time_in|time:"h:i A" }}{% else %}—{% endif %}</td>
+          <td>
+            {% if r.status == 'present' %}<span class="badge badge-green">Present</span>
+            {% elif r.status == 'late' %}<span class="badge badge-yellow">Late</span>
+            {% elif r.status == 'absent' %}<span class="badge badge-red">Absent</span>
+            {% else %}<span class="badge badge-blue">{{ r.get_status_display }}</span>{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr class="empty-row"><td colspan="3">No attendance records for today.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div>
+    <p style="font-size:13px;font-weight:bold;margin-bottom:8px;">Quick Links</p>
+    <div style="background:white;border:1px solid #ddd;padding:15px;display:flex;flex-direction:column;gap:8px;">
+      <a href="{% url 'employee_add' %}" class="btn btn-primary" style="text-align:center;">+ Add Employee</a>
+      <a href="{% url 'attendance' %}"   class="btn btn-success" style="text-align:center;">Record Attendance</a>
+      <a href="{% url 'employee_list' %}" class="btn btn-secondary" style="text-align:center;">View All Employees</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

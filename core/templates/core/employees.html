@@ -1,0 +1,70 @@
+{% extends 'core/base.html' %}
+{% block title %}Employees{% endblock %}
+{% block page_title %}Employees{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">Employees</div>
+    <div class="page-sub">Manage employee records</div>
+  </div>
+  <a href="{% url 'employee_add' %}" class="btn btn-primary">+ Add Employee</a>
+</div>
+
+<form method="get" class="filter-row">
+  <input type="text" name="q" value="{{ q }}" placeholder="Search name or ID...">
+  <select name="dept">
+    <option value="">All Departments</option>
+    {% for d in departments %}
+    <option value="{{ d.pk }}" {% if dept == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
+    {% endfor %}
+  </select>
+  <select name="status">
+    <option value="">All Status</option>
+    <option value="active"   {% if status == 'active' %}selected{% endif %}>Active</option>
+    <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+    <option value="on_leave" {% if status == 'on_leave' %}selected{% endif %}>On Leave</option>
+  </select>
+  <button type="submit" class="btn btn-secondary">Search</button>
+  <a href="{% url 'employee_list' %}" class="btn btn-secondary">Clear</a>
+</form>
+
+<table>
+  <thead>
+    <tr>
+      <th>Employee ID</th>
+      <th>Name</th>
+      <th>Department</th>
+      <th>Position</th>
+      <th>Date Hired</th>
+      <th>Salary</th>
+      <th>Status</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for emp in employees %}
+    <tr>
+      <td>{{ emp.employee_id }}</td>
+      <td>{{ emp.get_full_name }}</td>
+      <td>{{ emp.department.name|default:"—" }}</td>
+      <td>{{ emp.position }}</td>
+      <td>{{ emp.date_hired }}</td>
+      <td>₱{{ emp.basic_salary|floatformat:2 }}</td>
+      <td>
+        {% if emp.status == 'active' %}<span class="badge badge-green">Active</span>
+        {% elif emp.status == 'on_leave' %}<span class="badge badge-yellow">On Leave</span>
+        {% else %}<span class="badge badge-gray">Inactive</span>{% endif %}
+      </td>
+      <td>
+        <a href="{% url 'employee_detail' emp.pk %}" class="btn btn-sm btn-secondary">View</a>
+        <a href="{% url 'employee_edit' emp.pk %}"   class="btn btn-sm btn-primary">Edit</a>
+        <a href="{% url 'employee_delete' emp.pk %}" class="btn btn-sm btn-danger">Delete</a>
+      </td>
+    </tr>
+    {% empty %}
+    <tr class="empty-row"><td colspan="8">No employees found.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends 'core/base.html' %}
+{% block title %}Settings{% endblock %}
+{% block page_title %}Settings{% endblock %}
+
+{% block content %}
+<div class="page-title">Settings</div>
+<div class="page-sub" style="margin-bottom:20px;">System configuration</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+
+  <!-- Company Info -->
+  <div class="form-box">
+    <h3>Company Information</h3>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="save_company">
+
+      <label>Company Name</label>
+      <input type="text" name="company_name" value="{{ settings.company_name }}">
+
+      <label>Address</label>
+      <textarea name="address" rows="2">{{ settings.address }}</textarea>
+
+      <label>Phone</label>
+      <input type="text" name="phone" value="{{ settings.phone }}">
+
+      <label>Email</label>
+      <input type="email" name="email" value="{{ settings.email }}">
+
+      <div class="form-row" style="margin-top:12px;">
+        <div>
+          <label>Work Start Time</label>
+          <input type="time" name="work_start" value="{{ settings.work_start|time:'H:i' }}">
+        </div>
+        <div>
+          <label>Work End Time</label>
+          <input type="time" name="work_end" value="{{ settings.work_end|time:'H:i' }}">
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button type="submit" class="btn btn-primary">Save Settings</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Departments -->
+  <div>
+    <div class="form-box" style="margin-bottom:15px;">
+      <h3>Add Department</h3>
+      <form method="post" style="display:flex;gap:8px;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_dept">
+        <input type="text" name="dept_name" placeholder="Department name" style="flex:1;">
+        <button type="submit" class="btn btn-primary">Add</button>
+      </form>
+    </div>
+
+    <p style="font-size:13px;font-weight:bold;margin-bottom:8px;">Departments</p>
+    <table>
+      <thead>
+        <tr><th>Name</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        {% for d in departments %}
+        <tr>
+          <td>{{ d.name }}</td>
+          <td>
+            <form method="post" style="display:inline;" onsubmit="return confirm('Delete this department?')">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="delete_dept">
+              <input type="hidden" name="dept_id" value="{{ d.pk }}">
+              <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr class="empty-row"><td colspan="2">No departments yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

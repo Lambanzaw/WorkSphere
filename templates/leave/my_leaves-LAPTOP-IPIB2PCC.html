@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% block title %}My Leave Requests — WorkSphere{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;">
+  <div>
+    <h1 style="font-size:1.6rem;font-weight:800;color:var(--text-primary);margin-bottom:.25rem;">My Leave Requests</h1>
+    <p style="color:var(--text-secondary);font-size:.9rem;">Manage and track your leave applications</p>
+  </div>
+  <a href="{% url 'leave_create' %}" style="
+    display:inline-flex;align-items:center;gap:.5rem;
+    background:var(--primary);color:white;
+    padding:.65rem 1.4rem;border-radius:10px;
+    font-weight:600;font-size:.9rem;
+    box-shadow:0 4px 12px rgba(79,70,229,0.3);
+    transition:all .2s;text-decoration:none;">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    File Leave Request
+  </a>
+</div>
+
+<!-- Leave Balance Cards -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.25rem;margin-bottom:2rem;">
+  {% for b in balances %}
+  {% cycle '#4F46E5' '#22C55E' '#F59E0B' '#EF4444' '#8B5CF6' as bar_color silent %}
+  <div style="
+    background:white;border-radius:16px;padding:1.5rem;
+    box-shadow:var(--shadow-sm);border:1px solid var(--border-light);
+    position:relative;overflow:hidden;">
+    <div style="position:absolute;top:0;left:0;right:0;height:4px;background:{{ bar_color }};border-radius:16px 16px 0 0;"></div>
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;">
+      <div>
+        <p style="font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-secondary);margin-bottom:.3rem;">
+          {{ b.leave_type.name }}
+        </p>
+        <div style="font-size:2.5rem;font-weight:800;color:var(--text-primary);line-height:1;">
+          {{ b.remaining_days }}
+        </div>
+        <p style="font-size:.8rem;color:var(--text-muted);margin-top:.3rem;">days remaining</p>
+      </div>
+      <div style="width:46px;height:46px;border-radius:12px;background:var(--primary-bg);display:flex;align-items:center;justify-content:center;font-size:1.3rem;">
+        {% if 'Vacation' in b.leave_type.name %}🏖️{% elif 'Sick' in b.leave_type.name %}🏥{% elif 'Emergency' in b.leave_type.name %}🚨{% else %}📋{% endif %}
+      </div>
+    </div>
+
+    <div>
+      <div style="display:flex;justify-content:space-between;font-size:.76rem;color:var(--text-muted);margin-bottom:.4rem;">
+        <span>{{ b.used_days }} used</span>
+        <span>{{ b.allocated_days }} total</span>
+      </div>
+      <div style="background:var(--border-light);border-radius:999px;height:6px;">
+        {% if b.allocated_days > 0 %}
+          {% widthratio b.used_days b.allocated_days 100 as pct %}
+          <div style="width:{{ pct }}%;background:{{ bar_color }};height:6px;border-radius:999px;"></div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div style="grid-column:1/-1;background:white;border-radius:16px;padding:2rem;text-align:center;color:var(--text-muted);">
+    No leave balances configured. Contact HR.
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Leave History -->
+<div style="background:white;border-radius:16px;box-shadow:var(--shadow-sm);border:1px solid var(--border-light);overflow:hidden;">
+
+  <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <h2 style="font-size:1rem;font-weight:700;color:var(--text-primary);">Leave History</h2>
+      <p style="font-size:.82rem;color:var(--text-muted);margin-top:.1rem;">{{ leaves.count }} total request{{ leaves.count|pluralize }}</p>
+    </div>
+  </div>
+
+  {% if leaves %}
+  <div style="padding:1rem 1.5rem;display:flex;flex-direction:column;gap:.75rem;">
+    {% for leave in leaves %}
+    <div style="
+      border:1px solid var(--border-light);border-radius:12px;padding:1.1rem 1.25rem;
+      display:grid;grid-template-columns:48px 1fr auto auto;gap:1rem;align-items:center;
+      background:#FAFAFA;transition:all .2s;"
+      onmouseenter="this.style.background='white';this.style.borderColor='#C7D2FE';this.style.boxShadow='var(--shadow)';"
+      onmouseleave="this.style.background='#FAFAFA';this.style.borderColor='var(--border-light)';this.style.boxShadow='none';">
+
+      <!-- Icon -->
+      <div style="
+        width:44px;height:44px;border-radius:10px;flex-shrink:0;
+        display:flex;align-items:center;justify-content:center;font-size:1.25rem;
+        background:{% if leave.status == 'approved' %}#D1FAE5{% elif leave.status == 'rejected' %}#FEE2E2{% elif leave.status == 'cancelled' %}#F3F4F6{% else %}#EEF2FF{% endif %};">
+        {% if leave.status == 'approved' %}✅{% elif leave.status == 'rejected' %}❌{% elif leave.status == 'cancelled' %}🚫{% else %}⏳{% endif %}
+      </div>
+
+      <!-- Info -->
+      <div>
+        <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.35rem;flex-wrap:wrap;">
+          <span style="font-weight:700;font-size:.95rem;color:var(--text-primary);">{{ leave.leave_type.name }}</span>
+          <span style="
+            font-size:.72rem;font-weight:600;padding:.2rem .65rem;border-radius:999px;
+            {% if leave.status == 'pending' %}background:#FEF3C7;color:#92400E;
+            {% elif leave.status == 'approved' %}background:#D1FAE5;color:#065F46;
+            {% elif leave.status == 'rejected' %}background:#FEE2E2;color:#991B1B;
+            {% else %}background:#F3F4F6;color:#6B7280;{% endif %}">
+            {{ leave.status|capfirst }}
+          </span>
+        </div>
+        <div style="font-size:.83rem;color:var(--text-secondary);display:flex;flex-wrap:wrap;gap:.3rem .6rem;align-items:center;">
+          <span>📅 {{ leave.start_date|date:"M d, Y" }} → {{ leave.end_date|date:"M d, Y" }}</span>
+          <span style="color:var(--border);">·</span>
+          <span>{{ leave.total_days }} day{{ leave.total_days|pluralize }}</span>
+          <span style="color:var(--border);">·</span>
+          <span style="font-style:italic;color:var(--text-muted);">{{ leave.reason|truncatechars:55 }}</span>
+        </div>
+      </div>
+
+      <!-- Filed date -->
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:.73rem;color:var(--text-muted);">Filed</div>
+        <div style="font-size:.83rem;font-weight:500;color:var(--text-secondary);white-space:nowrap;">{{ leave.created_at|date:"M d, Y" }}</div>
+      </div>
+
+      <!-- Cancel button -->
+      <div style="flex-shrink:0;">
+        {% if leave.status == 'pending' %}
+          <a href="{% url 'leave_cancel' leave.pk %}"
+             onclick="return confirm('Cancel this leave request?')"
+             style="
+               display:inline-flex;align-items:center;
+               background:#FEF2F2;color:#EF4444;
+               border:1px solid #FECACA;
+               padding:.4rem .9rem;border-radius:8px;
+               font-size:.82rem;font-weight:600;
+               text-decoration:none;transition:all .2s;white-space:nowrap;"
+             onmouseenter="this.style.background='#EF4444';this.style.color='white';"
+             onmouseleave="this.style.background='#FEF2F2';this.style.color='#EF4444';">
+            Cancel
+          </a>
+        {% else %}
+          <span style="color:var(--text-muted);font-size:.85rem;">—</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div style="padding:4rem 2rem;text-align:center;">
+    <div style="font-size:3.5rem;margin-bottom:1rem;">🏖️</div>
+    <h3 style="font-size:1.1rem;font-weight:700;color:var(--text-primary);margin-bottom:.5rem;">No Leave Requests Yet</h3>
+    <p style="color:var(--text-muted);font-size:.9rem;margin-bottom:1.5rem;">You haven't filed any leave requests.</p>
+    <a href="{% url 'leave_create' %}" style="
+      display:inline-flex;align-items:center;gap:.5rem;
+      background:var(--primary);color:white;
+      padding:.65rem 1.4rem;border-radius:10px;
+      font-weight:600;font-size:.9rem;text-decoration:none;">
+      + File Leave Request
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

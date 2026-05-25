@@ -1,0 +1,68 @@
+{% extends 'core/base.html' %}
+{% block title %}{{ employee.get_full_name }}{% endblock %}
+{% block page_title %}Employee Detail{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">{{ employee.get_full_name }}</div>
+    <div class="page-sub">{{ employee.employee_id }} — {{ employee.position }}</div>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <a href="{% url 'employee_edit' employee.pk %}"   class="btn btn-primary">Edit</a>
+    <a href="{% url 'employee_delete' employee.pk %}" class="btn btn-danger">Delete</a>
+    <a href="{% url 'employee_list' %}"               class="btn btn-secondary">Back</a>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+  <div>
+    <table>
+      <tbody>
+        <tr><td style="width:140px;color:#666;font-size:12px;">Employee ID</td><td>{{ employee.employee_id }}</td></tr>
+        <tr><td style="color:#666;font-size:12px;">Full Name</td><td><strong>{{ employee.get_full_name }}</strong></td></tr>
+        <tr><td style="color:#666;font-size:12px;">Email</td><td>{{ employee.email }}</td></tr>
+        <tr><td style="color:#666;font-size:12px;">Phone</td><td>{{ employee.phone|default:"—" }}</td></tr>
+        <tr><td style="color:#666;font-size:12px;">Department</td><td>{{ employee.department.name|default:"—" }}</td></tr>
+        <tr><td style="color:#666;font-size:12px;">Position</td><td>{{ employee.position }}</td></tr>
+        <tr><td style="color:#666;font-size:12px;">Date Hired</td><td>{{ employee.date_hired }}</td></tr>
+        <tr><td style="color:#666;font-size:12px;">Basic Salary</td><td><strong>₱{{ employee.basic_salary|floatformat:2 }}</strong></td></tr>
+        <tr><td style="color:#666;font-size:12px;">Address</td><td>{{ employee.address|default:"—" }}</td></tr>
+        <tr>
+          <td style="color:#666;font-size:12px;">Status</td>
+          <td>
+            {% if employee.status == 'active' %}<span class="badge badge-green">Active</span>
+            {% elif employee.status == 'on_leave' %}<span class="badge badge-yellow">On Leave</span>
+            {% else %}<span class="badge badge-gray">Inactive</span>{% endif %}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div>
+    <p style="font-size:13px;font-weight:bold;margin-bottom:8px;">Recent Attendance</p>
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Time In</th><th>Time Out</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        {% for r in recent_attendance %}
+        <tr>
+          <td>{{ r.date }}</td>
+          <td>{% if r.time_in %}{{ r.time_in|time:"h:i A" }}{% else %}—{% endif %}</td>
+          <td>{% if r.time_out %}{{ r.time_out|time:"h:i A" }}{% else %}—{% endif %}</td>
+          <td>
+            {% if r.status == 'present' %}<span class="badge badge-green">Present</span>
+            {% elif r.status == 'late' %}<span class="badge badge-yellow">Late</span>
+            {% else %}<span class="badge badge-red">{{ r.get_status_display }}</span>{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr class="empty-row"><td colspan="4">No records.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

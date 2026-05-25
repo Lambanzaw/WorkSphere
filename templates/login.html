@@ -5,32 +5,359 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WorkSphere — Sign In</title>
-  <link rel="stylesheet" href="{% static 'css/worksphere.css' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: stretch;
+      background: #0f0c29;
+      overflow: hidden;
+    }
+
+    .left-panel {
+      flex: 1;
+      background: linear-gradient(145deg, #0d1117 0%, #1a1a2e 40%, #16213e 70%, #0f3460 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .left-panel::before {
+      content: '';
+      position: absolute;
+      width: 700px; height: 700px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(56,189,248,.08) 0%, transparent 65%);
+      top: -250px; right: -200px;
+    }
+
+    .left-panel::after {
+      content: '';
+      position: absolute;
+      width: 500px; height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(99,102,241,.12) 0%, transparent 65%);
+      bottom: -150px; left: -150px;
+    }
+
+    .grid-lines {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+
+    .left-content {
+      position: relative;
+      z-index: 2;
+      max-width: 420px;
+      text-align: center;
+    }
+
+    .left-brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 48px;
+    }
+
+    .left-brand-icon {
+      width: 46px; height: 46px;
+      border-radius: 13px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(99,102,241,.4);
+    }
+
+    .left-brand-icon svg {
+      width: 22px; height: 22px;
+      stroke: white; fill: none; stroke-width: 2;
+    }
+
+    .left-brand-name {
+      font-size: 19px;
+      font-weight: 800;
+      color: white;
+      letter-spacing: -.3px;
+      line-height: 1.2;
+      text-align: left;
+    }
+
+    .left-brand-name span {
+      display: block;
+      font-size: 10px;
+      font-weight: 400;
+      color: rgba(255,255,255,.4);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      margin-top: 2px;
+    }
+
+    .left-tagline {
+      font-size: 38px;
+      font-weight: 800;
+      color: white;
+      line-height: 1.2;
+      letter-spacing: -.6px;
+      margin-bottom: 18px;
+    }
+
+    .left-tagline .highlight {
+      background: linear-gradient(90deg, #6366f1, #a78bfa, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .left-sub {
+      font-size: 14px;
+      color: rgba(255,255,255,.45);
+      line-height: 1.7;
+    }
+
+    .right-panel {
+      width: 500px;
+      min-width: 500px;
+      background: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 52px;
+      position: relative;
+    }
+
+    .right-panel::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 4px; height: 100%;
+      background: linear-gradient(180deg, #6366f1 0%, #a78bfa 50%, #38bdf8 100%);
+    }
+
+    .right-content { width: 100%; max-width: 360px; }
+
+    .right-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #EEF2FF;
+      color: #4F46E5;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 999px;
+      margin-bottom: 16px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .right-eyebrow span {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #4F46E5;
+      display: inline-block;
+    }
+
+    .right-header { margin-bottom: 32px; }
+
+    .right-header h2 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #111827;
+      letter-spacing: -.5px;
+      margin-bottom: 6px;
+    }
+
+    .right-header p {
+      font-size: 13px;
+      color: #9CA3AF;
+      font-weight: 400;
+    }
+
+    .form-group { margin-bottom: 18px; }
+
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 7px;
+      letter-spacing: .01em;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid #E5E7EB;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-family: 'Inter', sans-serif;
+      color: #111827;
+      background: #FAFAFA;
+      outline: none;
+      transition: all .2s ease;
+    }
+
+    .form-control:focus {
+      border-color: #6366f1;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(99,102,241,.1);
+    }
+
+    .form-control::placeholder { color: #C4C8CF; }
+
+    .form-error {
+      font-size: 11px;
+      color: #DC2626;
+      margin-top: 5px;
+      display: block;
+    }
+
+    .alert {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      margin-bottom: 18px;
+      border: 1px solid;
+    }
+
+    .alert-error,
+    .alert-danger  { background: #FEF2F2; border-color: #FECACA; color: #991B1B; }
+    .alert-success { background: #F0FDF4; border-color: #A7F3D0; color: #065F46; }
+    .alert-warning { background: #FFFBEB; border-color: #FDE68A; color: #92400E; }
+    .alert-info    { background: #EFF6FF; border-color: #BFDBFE; color: #1E40AF; }
+
+    .btn-signin {
+      width: 100%;
+      padding: 13px 20px;
+      background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 6px;
+      transition: all .2s ease;
+      box-shadow: 0 4px 16px rgba(79,70,229,.3);
+      letter-spacing: .01em;
+    }
+
+    .btn-signin:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(79,70,229,.4);
+    }
+
+    .btn-signin:active { transform: translateY(0); }
+
+    .btn-signin svg {
+      width: 16px; height: 16px;
+      stroke: white; fill: none; stroke-width: 2;
+    }
+
+    .forgot-link {
+      display: block;
+      text-align: center;
+      margin-top: 16px;
+      font-size: 12.5px;
+      color: #6366f1;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color .15s;
+    }
+
+    .forgot-link:hover { color: #4338CA; }
+
+    .right-footer {
+      margin-top: 36px;
+      padding-top: 20px;
+      border-top: 1px solid #F3F4F6;
+      text-align: center;
+      font-size: 11px;
+      color: #C4C8CF;
+    }
+
+    @media (max-width: 768px) {
+      body { flex-direction: column; }
+      .left-panel { display: none; }
+      .right-panel {
+        width: 100%;
+        min-width: unset;
+        padding: 40px 24px;
+      }
+      .right-panel::before { display: none; }
+    }
+  </style>
 </head>
 <body>
-<div class="login-page">
-  <div class="login-card">
 
-    <div class="login-logo">
-      <div class="brand-icon">
-        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+<div class="left-panel">
+  <div class="grid-lines"></div>
+  <div class="left-content">
+
+    <h1 class="left-tagline">
+      The smarter way<br>to manage your<br>
+      <span class="highlight">workforce.</span>
+    </h1>
+
+    <p class="left-sub">
+      A complete HR platform built for modern teams.<br>
+      Manage people, time, and payroll — all in one place.
+    </p>
+
+  </div>
+</div>
+
+<div class="right-panel">
+ <div class="right-content">
+
+    <div class="left-brand" style="margin-bottom:32px;justify-content:flex-start;">
+      <div class="left-brand-icon" style="background:none;box-shadow:none;padding:0;">
+        <img src="/static/images/logo.jpg" style="width:40px;height:40px;object-fit:contain;">
       </div>
-      <h1>WorkSphere</h1>
-      <p>Smart Workforce Management Made Simple</p>
+      <div class="left-brand-name" style="color:#111827;">
+        WorkSphere
+        <span style="color:#9CA3AF;">HR Management System</span>
+      </div>
+    </div>
+
+    
+
+    <div class="right-header">
+      <h2>Welcome back</h2>
+      <p>Sign in to your WorkSphere account to continue</p>
     </div>
 
     {% if messages %}
       {% for message in messages %}
-      <div class="alert alert-{{ message.tags|default:'info' }}" style="margin-bottom: 20px;">
+      <div class="alert alert-{{ message.tags|default:'info' }}">
         <span>{{ message }}</span>
       </div>
       {% endfor %}
     {% endif %}
-
-    <h2>Welcome back</h2>
-    <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 24px; margin-top: -12px;">
-      Sign in to your account to continue
-    </p>
 
     <form method="post" novalidate>
       {% csrf_token %}
@@ -63,24 +390,18 @@
       </div>
       {% endif %}
 
-      <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; justify-content: center; margin-top: 8px;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-          <polyline points="10,17 15,12 10,7"/>
-          <line x1="15" y1="12" x2="3" y2="12"/>
-        </svg>
+      <button type="submit" class="btn-signin">
+        <svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10,17 15,12 10,7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
         Sign In
       </button>
 
-      <div style="text-align:center;margin-top:1rem;">
-        <a href="{% url 'forgot_password_email' %}" style="font-size:.875rem;color:var(--primary);">Forgot Password?</a>
-      </div>
+      <a href="{% url 'forgot_password_email' %}" class="forgot-link">Forgot your password?</a>
     </form>
 
-    <p style="text-align: center; margin-top: 24px; font-size: 0.78rem; color: var(--text-muted);">
-      WorkSphere v1.0 &nbsp;·&nbsp; © 2025 All rights reserved
-    </p>
+    <div class="right-footer">© 2026 WorkSphere · All rights reserved</div>
+
   </div>
 </div>
+
 </body>
 </html>

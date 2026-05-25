@@ -1,0 +1,48 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}WorkSphere{% endblock %} - HR System</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-brand">
+    WorkSphere
+    <small>HR Management System</small>
+  </div>
+  <nav>
+    <a href="{% url 'dashboard' %}"    class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a>
+    <a href="{% url 'employee_list' %}" class="nav-link {% if 'employee' in request.resolver_match.url_name %}active{% endif %}">Employees</a>
+    <a href="{% url 'attendance' %}"   class="nav-link {% if 'attendance' in request.resolver_match.url_name or request.resolver_match.url_name == 'clock_in' or request.resolver_match.url_name == 'clock_out' %}active{% endif %}">Attendance</a>
+    <a href="{% url 'settings' %}"     class="nav-link {% if request.resolver_match.url_name == 'settings' %}active{% endif %}">Settings</a>
+  </nav>
+  <div class="sidebar-footer">
+    Logged in as: <strong>{{ request.user.username }}</strong><br>
+    <a href="{% url 'logout' %}" style="color:#aaa;font-size:11px;">Sign Out</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <h2>{% block page_title %}WorkSphere{% endblock %}</h2>
+    <span>Version 0.1</span>
+  </div>
+
+  {% if messages %}
+  <div class="messages">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="page">
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+</body>
+</html>

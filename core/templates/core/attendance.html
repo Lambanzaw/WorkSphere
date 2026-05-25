@@ -1,0 +1,92 @@
+{% extends 'core/base.html' %}
+{% block title %}Attendance{% endblock %}
+{% block page_title %}Attendance{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">Attendance</div>
+    <div class="page-sub">Daily time records — {{ selected_date }}</div>
+  </div>
+  <form method="get" style="display:flex;gap:8px;align-items:center;">
+    <label style="margin:0;font-size:13px;">Date:</label>
+    <input type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}" style="padding:6px 9px;border:1px solid #ccc;font-size:13px;">
+    <button type="submit" class="btn btn-secondary">Filter</button>
+  </form>
+</div>
+
+<!-- Clock In / Out Form -->
+<div class="form-box" style="margin-bottom:15px;">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+
+    <div>
+      <h3 style="font-size:13px;margin-bottom:10px;">Clock In</h3>
+      <form method="post" action="{% url 'clock_in' %}">
+        {% csrf_token %}
+        <label style="margin-top:0;">Select Employee</label>
+        <select name="employee_id" required>
+          <option value="">-- Select --</option>
+          {% for emp in employees %}
+          <option value="{{ emp.pk }}">{{ emp.get_full_name }} ({{ emp.department.name|default:"No Dept" }})</option>
+          {% endfor %}
+        </select>
+        <div class="btn-row">
+          <button type="submit" class="btn btn-success">Clock In</button>
+        </div>
+      </form>
+    </div>
+
+    <div>
+      <h3 style="font-size:13px;margin-bottom:10px;">Clock Out</h3>
+      <form method="post" action="{% url 'clock_out' %}">
+        {% csrf_token %}
+        <label style="margin-top:0;">Select Employee</label>
+        <select name="employee_id" required>
+          <option value="">-- Select --</option>
+          {% for emp in employees %}
+          <option value="{{ emp.pk }}">{{ emp.get_full_name }} ({{ emp.department.name|default:"No Dept" }})</option>
+          {% endfor %}
+        </select>
+        <div class="btn-row">
+          <button type="submit" class="btn btn-danger">Clock Out</button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<!-- Attendance Table -->
+<p style="font-size:13px;font-weight:bold;margin-bottom:8px;">Records for {{ selected_date }}</p>
+<table>
+  <thead>
+    <tr>
+      <th>Employee</th>
+      <th>Department</th>
+      <th>Time In</th>
+      <th>Time Out</th>
+      <th>Late (mins)</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in records %}
+    <tr>
+      <td>{{ r.employee.get_full_name }}</td>
+      <td>{{ r.employee.department.name|default:"—" }}</td>
+      <td>{% if r.time_in %}{{ r.time_in|time:"h:i A" }}{% else %}—{% endif %}</td>
+      <td>{% if r.time_out %}{{ r.time_out|time:"h:i A" }}{% else %}—{% endif %}</td>
+      <td>{{ r.late_minutes }}</td>
+      <td>
+        {% if r.status == 'present' %}<span class="badge badge-green">Present</span>
+        {% elif r.status == 'late' %}<span class="badge badge-yellow">Late</span>
+        {% elif r.status == 'absent' %}<span class="badge badge-red">Absent</span>
+        {% else %}<span class="badge badge-blue">{{ r.get_status_display }}</span>{% endif %}
+      </td>
+    </tr>
+    {% empty %}
+    <tr class="empty-row"><td colspan="6">No attendance records for this date.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

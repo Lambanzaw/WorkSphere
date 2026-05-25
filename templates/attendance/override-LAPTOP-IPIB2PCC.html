@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% block title %}Override Attendance — WorkSphere{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Override Attendance</h1>
+    <p class="page-subtitle">
+      Modifying record for
+      <strong>{{ attendance.employee.get_full_name }}</strong>
+      on <strong>{{ attendance.date|date:"F d, Y" }}</strong>
+    </p>
+  </div>
+  <a href="{% url 'admin_attendance_list' %}" class="btn btn-secondary">
+    ← Back to Attendance List
+  </a>
+</div>
+
+<div style="max-width:680px;">
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Current Record</h2>
+    </div>
+    <div class="card-body">
+      <div class="info-grid" style="grid-template-columns:repeat(3,1fr);">
+        <div class="info-item">
+          <span class="info-label">Employee</span>
+          <span class="info-value">{{ attendance.employee.get_full_name }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Date</span>
+          <span class="info-value">{{ attendance.date|date:"F d, Y" }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Day</span>
+          <span class="info-value">{{ attendance.date|date:"l" }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Current Time In</span>
+          <span class="info-value">
+            {% if attendance.time_in %}
+              {{ attendance.time_in|time:"h:i A" }}
+            {% else %}
+              <span style="color:var(--gray-400);">—</span>
+            {% endif %}
+          </span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Current Time Out</span>
+          <span class="info-value">
+            {% if attendance.time_out %}
+              {{ attendance.time_out|time:"h:i A" }}
+            {% else %}
+              <span style="color:var(--gray-400);">—</span>
+            {% endif %}
+          </span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Status</span>
+          <span class="info-value">
+            {% if attendance.is_late %}
+              <span class="badge badge-warning">Late</span>
+            {% else %}
+              <span class="badge badge-success">On Time</span>
+            {% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:1.5rem;">
+    <div class="card-header">
+      <h2 class="card-title">Override Details</h2>
+    </div>
+    <div class="card-body">
+      <div class="alert alert-warning" style="margin-bottom:1.5rem;">
+        <strong>⚠ Admin Action:</strong> All attendance overrides are recorded in the audit log with your name and reason. This action cannot be undone.
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">
+            {% for error in form.non_field_errors %}
+              <p style="margin:0;">{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <div class="form-row" style="grid-template-columns:1fr 1fr;">
+          <div class="form-group">
+            <label class="form-label" for="{{ form.time_in.id_for_label }}">
+              New Time In
+            </label>
+            {{ form.time_in }}
+            {% if form.time_in.errors %}
+              <p class="form-error">{{ form.time_in.errors|join:", " }}</p>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.time_out.id_for_label }}">
+              New Time Out
+            </label>
+            {{ form.time_out }}
+            {% if form.time_out.errors %}
+              <p class="form-error">{{ form.time_out.errors|join:", " }}</p>
+            {% endif %}
+            <p class="form-help">Leave blank if employee has not yet clocked out.</p>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="{{ form.override_reason.id_for_label }}">
+            Override Reason <span style="color:var(--danger);">*</span>
+          </label>
+          {{ form.override_reason }}
+          {% if form.override_reason.errors %}
+            <p class="form-error">{{ form.override_reason.errors|join:", " }}</p>
+          {% endif %}
+          <p class="form-help">
+            Required. Explain why this attendance record is being modified.
+            This is saved to the audit log.
+          </p>
+        </div>
+
+        <div style="display:flex;gap:1rem;margin-top:1.5rem;">
+          <button type="submit" class="btn btn-primary">
+            Save Override
+          </button>
+          <a href="{% url 'admin_attendance_list' %}" class="btn btn-secondary">
+            Cancel
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
