@@ -376,3 +376,28 @@ class AdminSecurityQuestion(models.Model):
 
     def __str__(self):
         return f"{self.user.username} — security question"
+
+class AdminSecurityQuestion(models.Model):
+    user     = models.OneToOneField(User, on_delete=models.CASCADE, related_name='security_question')
+    question = models.CharField(max_length=255)
+    answer   = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"{self.user.username} — security question"
+
+
+# ─── SPHERE AI CONVERSATION LOG ───────────────────────────────────────────────
+class SphereConversation(models.Model):
+    LANGUAGE_CHOICES = [('en', 'English'), ('tl', 'Tagalog')]
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sphere_conversations')
+    question = models.TextField()
+    response = models.TextField()
+    language = models.CharField(max_length=5, choices=LANGUAGE_CHOICES, default='en')
+    is_voice = models.BooleanField(default=False)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.user.username} — {self.timestamp:%Y-%m-%d %H:%M}"
