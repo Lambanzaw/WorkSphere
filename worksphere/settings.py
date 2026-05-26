@@ -136,3 +136,5 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
     print("ALLOWED_HOSTS =", ALLOWED_HOSTS)
+    print("DEBUG HOST:", os.environ.get("ALLOWED_HOSTS"))
+    print("DEBUG DEBUG:", DEBUG)
