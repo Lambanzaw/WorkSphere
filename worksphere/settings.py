@@ -68,16 +68,14 @@ WSGI_APPLICATION = 'worksphere.wsgi.application'
 
 # ─── PostgreSQL Database ────────────────────────────────────────────────────────
 # REQUIREMENT: PostgreSQL ONLY — do not change to SQLite or MySQL
-import os
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('PGDATABASE'),
-        'USER': os.environ.get('PGUSER'),
-        'PASSWORD': os.environ.get('PGPASSWORD'),
-        'HOST': os.environ.get('PGHOST'),
-        'PORT': os.environ.get('PGPORT'),
+        'NAME': os.getenv('DB_NAME', 'worksphere_db'),
+        'USER': os.getenv('DB_USER', 'worksphere_user'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'worksphere123'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
 

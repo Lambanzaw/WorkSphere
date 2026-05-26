@@ -199,7 +199,9 @@ def employee_detail(request, pk):
     leave_balances = LeaveBalance.objects.filter(
         employee=employee,
         year=timezone.now().year
-    ).select_related('leave_type')
+    ).select_related('leave_type').exclude(
+        leave_type__name='Maternity Leave' if employee.gender == 'male' else 'Paternity Leave'
+    )
 
     context = {
         'employee': employee,
@@ -254,7 +256,9 @@ def my_profile(request):
     leave_balances = LeaveBalance.objects.filter(
         employee=employee,
         year=timezone.now().year
-    ).select_related('leave_type')
+    ).select_related('leave_type').exclude(
+        leave_type__name='Maternity Leave' if employee.gender == 'male' else 'Paternity Leave'
+    )
 
     return render(request, 'employees/my_profile.html', {
         'employee': employee,

@@ -38,6 +38,11 @@ class Employee(models.Model):
         ('terminated', 'Terminated'),
     ]
 
+    GENDER_CHOICES = [
+        ('male', 'Male'),
+        ('female', 'Female'),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='employee_profile')
     employee_id = models.CharField(max_length=20, unique=True)  # UNIQUE constraint
     first_name = models.CharField(max_length=100)
@@ -54,6 +59,7 @@ class Employee(models.Model):
     contact_number = models.CharField(max_length=20, blank=True)
     address = models.TextField(blank=True)
     photo = models.ImageField(upload_to='employee_photos/', blank=True, null=True)
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, default='male')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -376,23 +382,17 @@ class AdminSecurityQuestion(models.Model):
 
     def __str__(self):
         return f"{self.user.username} — security question"
+    # ─── SPHERE CONVERSATION LOG ──────────────────────────────────────────────────
+class SphereLog(models.Model):
+    ROLE_CHOICES = [('admin', 'Admin'), ('employee', 'Employee')]
+    LANG_CHOICES = [('en', 'English'), ('tl', 'Tagalog')]
 
-class AdminSecurityQuestion(models.Model):
-    user     = models.OneToOneField(User, on_delete=models.CASCADE, related_name='security_question')
-    question = models.CharField(max_length=255)
-    answer   = models.CharField(max_length=255)
-
-    def __str__(self):
-        return f"{self.user.username} — security question"
-
-
-# ─── SPHERE AI CONVERSATION LOG ───────────────────────────────────────────────
-class SphereConversation(models.Model):
-    LANGUAGE_CHOICES = [('en', 'English'), ('tl', 'Tagalog')]
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sphere_conversations')
-    question = models.TextField()
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sphere_logs')
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='employee')
+    transcript = models.TextField()
+    intent = models.CharField(max_length=50, default='UNKNOWN')
     response = models.TextField()
-    language = models.CharField(max_length=5, choices=LANGUAGE_CHOICES, default='en')
+    language = models.CharField(max_length=5, choices=LANG_CHOICES, default='en')
     is_voice = models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
 
@@ -400,4 +400,4 @@ class SphereConversation(models.Model):
         ordering = ['-timestamp']
 
     def __str__(self):
-        return f"{self.user.username} — {self.timestamp:%Y-%m-%d %H:%M}"
+        return f"{self.user.username} [{self.intent}] — {self.timestamp:%Y-%m-%d %H:%M}"

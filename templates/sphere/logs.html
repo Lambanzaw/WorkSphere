@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Sphere Logs{% endblock %}
+{% block page_title %}Sphere — Conversation Logs{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'sphere' %}" class="btn btn-primary btn-sm">← Back to Sphere</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">All Conversations ({{ logs.count }})</span>
+  </div>
+  <div class="table-wrapper">
+    <table class="ws-table">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>User</th>
+          <th>Role</th>
+          <th>Question</th>
+          <th>Intent</th>
+          <th>Response</th>
+          <th>Lang</th>
+          <th>Voice</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td style="white-space:nowrap;font-size:.75rem;color:var(--text-muted);">{{ log.timestamp|date:"M d, h:i A" }}</td>
+          <td><strong>{{ log.user.username }}</strong></td>
+          <td><span class="badge {% if log.role == 'admin' %}badge-info{% else %}badge-success{% endif %}">{{ log.role|capfirst }}</span></td>
+          <td style="max-width:180px;">{{ log.transcript|truncatechars:60 }}</td>
+          <td><span style="font-size:.7rem;font-weight:600;padding:2px 6px;border-radius:4px;background:var(--primary-bg);color:var(--primary);">{{ log.intent }}</span></td>
+          <td style="max-width:200px;color:var(--text-muted);">{{ log.response|truncatechars:70 }}</td>
+          <td><span class="badge badge-gray">{{ log.language|upper }}</span></td>
+          <td>{% if log.is_voice %}<span style="color:#22c55e;font-size:.8rem;">🎤</span>{% else %}<span style="color:var(--text-faint);">—</span>{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted);">No conversations yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

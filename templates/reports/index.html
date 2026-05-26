@@ -1,15 +1,15 @@
 {% extends 'base.html' %}
 {% block title %}Reports — WorkSphere{% endblock %}
+{% block page_title %}HR Reports{% endblock %}
 
 {% block content %}
 
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;flex-wrap:wrap;gap:1rem;">
   <div>
-    <h1 style="font-size:1.6rem;font-weight:800;color:var(--text-primary);margin-bottom:.25rem;">HR Reports</h1>
     <p style="color:var(--text-secondary);font-size:.9rem;">Analytics and insights for {{ selected_month_name }} {{ selected_year }}</p>
   </div>
-  <form method="get" style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
-    <select name="report" style="padding:.6rem .9rem;border:1px solid var(--border-light);border-radius:10px;font-size:.875rem;background:white;outline:none;">
+  <form method="get" action="{% url 'reports' %}" style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+    <select name="report" id="report-select" style="padding:.6rem .9rem;border:1px solid var(--border-light);border-radius:10px;font-size:.875rem;background:white;outline:none;">
       <option value="attendance" {% if report_type == 'attendance' %}selected{% endif %}>Attendance Report</option>
       <option value="directory"  {% if report_type == 'directory' %}selected{% endif %}>Employee Directory</option>
       <option value="payroll"    {% if report_type == 'payroll' %}selected{% endif %}>Payroll Summary</option>
@@ -28,6 +28,7 @@
   </form>
 </div>
 
+<!-- Stats -->
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;margin-bottom:2rem;">
   <div style="background:white;border-radius:16px;padding:1.5rem;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;">
@@ -79,6 +80,7 @@
   </div>
 </div>
 
+{% if report_type == 'attendance' %}
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;">
   <div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden;">
     <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
@@ -99,7 +101,6 @@
       {% endif %}
     </div>
   </div>
-
   <div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden;">
     <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
       <h2 style="font-size:1rem;font-weight:700;color:var(--text-primary);">Leave Breakdown</h2>
@@ -107,9 +108,7 @@
     </div>
     <div style="padding:1.5rem;display:flex;align-items:center;justify-content:center;min-height:260px;">
       {% if has_leave_data %}
-        <div style="max-width:260px;width:100%;">
-          <canvas id="leaveChart"></canvas>
-        </div>
+        <div style="max-width:260px;width:100%;"><canvas id="leaveChart"></canvas></div>
       {% else %}
         <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
           <div style="width:48px;height:48px;border-radius:12px;background:#F3F4F6;display:flex;align-items:center;justify-content:center;margin-bottom:.75rem;">
@@ -132,22 +131,10 @@
     {% for d in dept_stats %}
     <div style="display:grid;grid-template-columns:1.5fr repeat(4,auto) 200px;gap:1rem;align-items:center;padding:.875rem 1rem;background:#FAFAFA;border-radius:10px;border:1px solid var(--border-light);">
       <div style="font-weight:600;color:var(--text-primary);">{{ d.department }}</div>
-      <div style="text-align:center;">
-        <div style="font-size:.7rem;color:var(--text-muted);">Employees</div>
-        <div style="font-weight:700;">{{ d.employee_count }}</div>
-      </div>
-      <div style="text-align:center;">
-        <div style="font-size:.7rem;color:var(--text-muted);">Present</div>
-        <div style="font-weight:700;color:#22C55E;">{{ d.present_count }}</div>
-      </div>
-      <div style="text-align:center;">
-        <div style="font-size:.7rem;color:var(--text-muted);">Absent</div>
-        <div style="font-weight:700;color:#EF4444;">{{ d.absent_count }}</div>
-      </div>
-      <div style="text-align:center;">
-        <div style="font-size:.7rem;color:var(--text-muted);">Late</div>
-        <div style="font-weight:700;color:#F59E0B;">{{ d.late_count }}</div>
-      </div>
+      <div style="text-align:center;"><div style="font-size:.7rem;color:var(--text-muted);">Employees</div><div style="font-weight:700;">{{ d.employee_count }}</div></div>
+      <div style="text-align:center;"><div style="font-size:.7rem;color:var(--text-muted);">Present</div><div style="font-weight:700;color:#22C55E;">{{ d.present_count }}</div></div>
+      <div style="text-align:center;"><div style="font-size:.7rem;color:var(--text-muted);">Absent</div><div style="font-weight:700;color:#EF4444;">{{ d.absent_count }}</div></div>
+      <div style="text-align:center;"><div style="font-size:.7rem;color:var(--text-muted);">Late</div><div style="font-weight:700;color:#F59E0B;">{{ d.late_count }}</div></div>
       <div style="display:flex;align-items:center;gap:.75rem;">
         <div style="flex:1;background:var(--border-light);border-radius:999px;height:8px;">
           <div style="width:{{ d.attendance_rate }}%;background:#22C55E;height:8px;border-radius:999px;"></div>
@@ -158,12 +145,7 @@
     {% endfor %}
   </div>
   {% else %}
-  <div style="padding:2.5rem;text-align:center;color:var(--text-muted);">
-    <div style="width:48px;height:48px;border-radius:12px;background:#F3F4F6;display:flex;align-items:center;justify-content:center;margin:0 auto .75rem;">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/></svg>
-    </div>
-    <p>No data available for this period.</p>
-  </div>
+  <div style="padding:2.5rem;text-align:center;color:var(--text-muted);">No data available for this period.</div>
   {% endif %}
 </div>
 
@@ -187,7 +169,6 @@
       {% endfor %}
     </div>
   </div>
-
   <div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden;">
     <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;">
       <h2 style="font-size:1rem;font-weight:700;color:var(--text-primary);">Most Late Occurrences</h2>
@@ -235,83 +216,132 @@
     {% endfor %}
   </div>
 </div>
+{% endif %}
 
 {% if report_type == 'directory' %}
-<div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden;margin-top:1.5rem;">
-  <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
-    <h2 style="font-size:1rem;font-weight:700;color:var(--text-primary);">Employee Directory</h2>
-    <span style="font-size:.82rem;color:var(--text-muted);">{{ employee_directory.count }} employees</span>
+<div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden;">
+  <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+    <h2 style="font-size:1rem;font-weight:700;color:var(--text-primary);">Employee Directory <span style="font-size:.82rem;font-weight:400;color:var(--text-muted);">({{ employee_directory.count }})</span></h2>
+    <form method="get" action="{% url 'reports' %}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <input type="hidden" name="report" value="directory">
+      <input type="hidden" name="month" value="{{ selected_month }}">
+      <input type="hidden" name="year" value="{{ selected_year }}">
+      <input type="text" name="dir_search" value="{{ dir_search }}" placeholder="Search name, ID, position..."
+        style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:.82rem;outline:none;min-width:200px;">
+      <select name="dir_dept" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:.82rem;outline:none;">
+        <option value="">All Departments</option>
+        {% for dept in all_departments %}
+        <option value="{{ dept.pk }}" {% if dir_dept == dept.pk|stringformat:"s" %}selected{% endif %}>{{ dept.name }}</option>
+        {% endfor %}
+      </select>
+      <select name="dir_status" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:.82rem;outline:none;">
+        <option value="">All Status</option>
+        <option value="active" {% if dir_status == 'active' %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if dir_status == 'inactive' %}selected{% endif %}>Inactive</option>
+        <option value="on_leave" {% if dir_status == 'on_leave' %}selected{% endif %}>On Leave</option>
+        <option value="terminated" {% if dir_status == 'terminated' %}selected{% endif %}>Terminated</option>
+      </select>
+      <button type="submit" class="btn btn-primary btn-sm">Search</button>
+      <a href="{% url 'reports' %}?report=directory&month={{ selected_month }}&year={{ selected_year }}" class="btn btn-outline btn-sm">Clear</a>
+    </form>
   </div>
-  <table style="width:100%;border-collapse:collapse;font-size:.875rem;">
-    <thead>
-      <tr>
-        <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Employee ID</th>
-        <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Name</th>
-        <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Department</th>
-        <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Position</th>
-        <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Date Hired</th>
-        <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Email</th>
-        <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for emp in employee_directory %}
-      <tr style="border-bottom:1px solid #F3F4F6;">
-        <td style="padding:.875rem 1rem;color:#374151;">{{ emp.employee_id }}</td>
-        <td style="padding:.875rem 1rem;font-weight:600;color:#111827;">{{ emp.get_full_name }}</td>
-        <td style="padding:.875rem 1rem;color:#374151;">{{ emp.department.name|default:"—" }}</td>
-        <td style="padding:.875rem 1rem;color:#374151;">{{ emp.position }}</td>
-        <td style="padding:.875rem 1rem;color:#374151;">{{ emp.date_hired|date:"M d, Y" }}</td>
-        <td style="padding:.875rem 1rem;color:#374151;">{{ emp.email }}</td>
-        <td style="padding:.875rem 1rem;">
-          {% if emp.status == 'active' %}<span style="background:#D1FAE5;color:#065F46;font-size:.72rem;font-weight:600;padding:.2rem .65rem;border-radius:999px;">Active</span>
-          {% elif emp.status == 'on_leave' %}<span style="background:#FEF3C7;color:#92400E;font-size:.72rem;font-weight:600;padding:.2rem .65rem;border-radius:999px;">On Leave</span>
-          {% else %}<span style="background:#F3F4F6;color:#6B7280;font-size:.72rem;font-weight:600;padding:.2rem .65rem;border-radius:999px;">{{ emp.get_status_display }}</span>{% endif %}
-        </td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="7" style="padding:2rem;text-align:center;color:#9CA3AF;">No employees found.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:.875rem;">
+      <thead>
+        <tr>
+          <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;white-space:nowrap;">Employee ID</th>
+          <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;white-space:nowrap;">Name</th>
+          <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;white-space:nowrap;">Department</th>
+          <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;white-space:nowrap;">Position</th>
+          <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;white-space:nowrap;">Gender</th>
+          <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;white-space:nowrap;">Date Hired</th>
+          <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;white-space:nowrap;">Email</th>
+          <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;white-space:nowrap;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for emp in employee_directory %}
+        <tr style="border-bottom:1px solid #F3F4F6;">
+          <td style="padding:.875rem 1rem;color:#374151;white-space:nowrap;">{{ emp.employee_id }}</td>
+          <td style="padding:.875rem 1rem;font-weight:600;color:#111827;white-space:nowrap;">{{ emp.get_full_name }}</td>
+          <td style="padding:.875rem 1rem;color:#374151;white-space:nowrap;">{{ emp.department.name|default:"—" }}</td>
+          <td style="padding:.875rem 1rem;color:#374151;">{{ emp.position }}</td>
+          <td style="padding:.875rem 1rem;color:#374151;white-space:nowrap;">{{ emp.get_gender_display }}</td>
+          <td style="padding:.875rem 1rem;color:#374151;white-space:nowrap;">{{ emp.date_hired|date:"M d, Y" }}</td>
+          <td style="padding:.875rem 1rem;color:#374151;">{{ emp.email }}</td>
+          <td style="padding:.875rem 1rem;white-space:nowrap;">
+            {% if emp.status == 'active' %}<span style="background:#D1FAE5;color:#065F46;font-size:.72rem;font-weight:600;padding:.2rem .65rem;border-radius:999px;">Active</span>
+            {% elif emp.status == 'on_leave' %}<span style="background:#FEF3C7;color:#92400E;font-size:.72rem;font-weight:600;padding:.2rem .65rem;border-radius:999px;">On Leave</span>
+            {% else %}<span style="background:#F3F4F6;color:#6B7280;font-size:.72rem;font-weight:600;padding:.2rem .65rem;border-radius:999px;">{{ emp.get_status_display }}</span>{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" style="padding:2rem;text-align:center;color:#9CA3AF;">No employees found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 {% endif %}
 
 {% if report_type == 'payroll' %}
-<div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden;margin-top:1.5rem;">
-  <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
-    <h2 style="font-size:1rem;font-weight:700;color:var(--text-primary);">Payroll Summary — {{ selected_month_name }} {{ selected_year }}</h2>
-    <span style="font-size:.82rem;color:var(--text-muted);">{{ payroll_summary.count }} records</span>
+<div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden;">
+  <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+    <h2 style="font-size:1rem;font-weight:700;color:var(--text-primary);">Payroll Summary — {{ selected_month_name }} {{ selected_year }} <span style="font-size:.82rem;font-weight:400;color:var(--text-muted);">({{ payroll_summary.count }})</span></h2>
+    <form method="get" action="{% url 'reports' %}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <input type="hidden" name="report" value="payroll">
+      <input type="hidden" name="month" value="{{ selected_month }}">
+      <input type="hidden" name="year" value="{{ selected_year }}">
+      <input type="text" name="pay_search" value="{{ pay_search }}" placeholder="Search employee name..."
+        style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:.82rem;outline:none;min-width:200px;">
+      <select name="pay_dept" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:.82rem;outline:none;">
+        <option value="">All Departments</option>
+        {% for dept in all_departments %}
+        <option value="{{ dept.pk }}" {% if pay_dept == dept.pk|stringformat:"s" %}selected{% endif %}>{{ dept.name }}</option>
+        {% endfor %}
+      </select>
+      <select name="pay_status" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:.82rem;outline:none;">
+        <option value="">All Status</option>
+        <option value="draft" {% if pay_status == 'draft' %}selected{% endif %}>Draft</option>
+        <option value="finalized" {% if pay_status == 'finalized' %}selected{% endif %}>Finalized</option>
+        <option value="paid" {% if pay_status == 'paid' %}selected{% endif %}>Paid</option>
+      </select>
+      <button type="submit" class="btn btn-primary btn-sm">Search</button>
+      <a href="{% url 'reports' %}?report=payroll&month={{ selected_month }}&year={{ selected_year }}" class="btn btn-outline btn-sm">Clear</a>
+    </form>
   </div>
-  <table style="width:100%;border-collapse:collapse;font-size:.875rem;">
-    <thead>
-      <tr>
-        <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Employee</th>
-        <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Department</th>
-        <th style="padding:.75rem 1rem;text-align:right;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Basic</th>
-        <th style="padding:.75rem 1rem;text-align:right;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Deductions</th>
-        <th style="padding:.75rem 1rem;text-align:right;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Net Pay</th>
-        <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;">Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for p in payroll_summary %}
-      <tr style="border-bottom:1px solid #F3F4F6;">
-        <td style="padding:.875rem 1rem;font-weight:600;color:#111827;">{{ p.employee.get_full_name }}</td>
-        <td style="padding:.875rem 1rem;color:#374151;">{{ p.employee.department.name|default:"—" }}</td>
-        <td style="padding:.875rem 1rem;text-align:right;color:#374151;">₱{{ p.basic_salary|floatformat:2 }}</td>
-        <td style="padding:.875rem 1rem;text-align:right;color:#EF4444;">₱{{ p.total_deductions|floatformat:2 }}</td>
-        <td style="padding:.875rem 1rem;text-align:right;font-weight:700;color:#4F46E5;">₱{{ p.net_salary|floatformat:2 }}</td>
-        <td style="padding:.875rem 1rem;">
-          {% if p.status == 'finalized' %}<span style="background:#D1FAE5;color:#065F46;font-size:.72rem;font-weight:600;padding:.2rem .65rem;border-radius:999px;">Finalized</span>
-          {% else %}<span style="background:#FEF3C7;color:#92400E;font-size:.72rem;font-weight:600;padding:.2rem .65rem;border-radius:999px;">Draft</span>{% endif %}
-        </td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="6" style="padding:2rem;text-align:center;color:#9CA3AF;">No payroll records for this period.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:.875rem;">
+      <thead>
+        <tr>
+          <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;white-space:nowrap;">Employee</th>
+          <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;white-space:nowrap;">Department</th>
+          <th style="padding:.75rem 1rem;text-align:right;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;white-space:nowrap;">Basic</th>
+          <th style="padding:.75rem 1rem;text-align:right;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;white-space:nowrap;">Deductions</th>
+          <th style="padding:.75rem 1rem;text-align:right;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;white-space:nowrap;">Net Pay</th>
+          <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;white-space:nowrap;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in payroll_summary %}
+        <tr style="border-bottom:1px solid #F3F4F6;">
+          <td style="padding:.875rem 1rem;font-weight:600;color:#111827;white-space:nowrap;">{{ p.employee.get_full_name }}</td>
+          <td style="padding:.875rem 1rem;color:#374151;white-space:nowrap;">{{ p.employee.department.name|default:"—" }}</td>
+          <td style="padding:.875rem 1rem;text-align:right;color:#374151;white-space:nowrap;">₱{{ p.basic_salary|floatformat:2 }}</td>
+          <td style="padding:.875rem 1rem;text-align:right;color:#EF4444;white-space:nowrap;">₱{{ p.total_deductions|floatformat:2 }}</td>
+          <td style="padding:.875rem 1rem;text-align:right;font-weight:700;color:#4F46E5;white-space:nowrap;">₱{{ p.net_salary|floatformat:2 }}</td>
+          <td style="padding:.875rem 1rem;white-space:nowrap;">
+            {% if p.status == 'finalized' %}<span style="background:#D1FAE5;color:#065F46;font-size:.72rem;font-weight:600;padding:.2rem .65rem;border-radius:999px;">Finalized</span>
+            {% elif p.status == 'paid' %}<span style="background:#DBEAFE;color:#1E40AF;font-size:.72rem;font-weight:600;padding:.2rem .65rem;border-radius:999px;">Paid</span>
+            {% else %}<span style="background:#FEF3C7;color:#92400E;font-size:.72rem;font-weight:600;padding:.2rem .65rem;border-radius:999px;">Draft</span>{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="padding:2rem;text-align:center;color:#9CA3AF;">No payroll records for this period.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 {% endif %}
 
@@ -320,6 +350,10 @@
 {% block extra_js %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script>
+document.getElementById('report-select').addEventListener('change', function() {
+    this.closest('form').submit();
+});
+
 document.addEventListener('DOMContentLoaded', function() {
   var attLabels   = {{ attendance_labels|safe }};
   var attPresent  = {{ attendance_present_data|safe }};

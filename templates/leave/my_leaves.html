@@ -1,165 +1,105 @@
 {% extends 'base.html' %}
-{% block title %}My Leave Requests — WorkSphere{% endblock %}
+{% block title %}My Leave Requests{% endblock %}
+{% block page_title %}My Leave Requests{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'leave_create' %}" class="btn btn-primary btn-sm">+ File Leave Request</a>
+{% endblock %}
 
 {% block content %}
 
-<!-- Page Header -->
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;">
-  <div>
-    <h1 style="font-size:1.6rem;font-weight:800;color:var(--text-primary);margin-bottom:.25rem;">My Leave Requests</h1>
-    <p style="color:var(--text-secondary);font-size:.9rem;">Manage and track your leave applications</p>
-  </div>
-  <a href="{% url 'leave_create' %}" style="
-    display:inline-flex;align-items:center;gap:.5rem;
-    background:var(--primary);color:white;
-    padding:.65rem 1.4rem;border-radius:10px;
-    font-weight:600;font-size:.9rem;
-    box-shadow:0 4px 12px rgba(79,70,229,0.3);
-    transition:all .2s;text-decoration:none;">
-    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-    File Leave Request
-  </a>
-</div>
-
 <!-- Leave Balance Cards -->
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.25rem;margin-bottom:2rem;">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;">
   {% for b in balances %}
-  {% cycle '#4F46E5' '#22C55E' '#F59E0B' '#EF4444' '#8B5CF6' as bar_color silent %}
-  <div style="
-    background:white;border-radius:16px;padding:1.5rem;
-    box-shadow:var(--shadow-sm);border:1px solid var(--border-light);
-    position:relative;overflow:hidden;">
-    <div style="position:absolute;top:0;left:0;right:0;height:4px;background:{{ bar_color }};border-radius:16px 16px 0 0;"></div>
-
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;">
+  <div class="stat-card">
+    <div class="stat-card-header">
       <div>
-        <p style="font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-secondary);margin-bottom:.3rem;">
-          {{ b.leave_type.name }}
-        </p>
-        <div style="font-size:2.5rem;font-weight:800;color:var(--text-primary);line-height:1;">
-          {{ b.remaining_days }}
-        </div>
-        <p style="font-size:.8rem;color:var(--text-muted);margin-top:.3rem;">days remaining</p>
+        <div class="stat-card-label">{{ b.leave_type.name }}</div>
+        <div class="stat-value" style="font-size:2rem;">{{ b.remaining_days }}</div>
+        <div style="font-size:.75rem;color:var(--text-muted);margin-top:2px;">days remaining</div>
       </div>
-      <div style="width:46px;height:46px;border-radius:12px;background:var(--primary-bg);display:flex;align-items:center;justify-content:center;font-size:1.3rem;">
-        {% if 'Vacation' in b.leave_type.name %}🏖️{% elif 'Sick' in b.leave_type.name %}🏥{% elif 'Emergency' in b.leave_type.name %}🚨{% else %}📋{% endif %}
-      </div>
-    </div>
-
-    <div>
-      <div style="display:flex;justify-content:space-between;font-size:.76rem;color:var(--text-muted);margin-bottom:.4rem;">
-        <span>{{ b.used_days }} used</span>
-        <span>{{ b.allocated_days }} total</span>
-      </div>
-      <div style="background:var(--border-light);border-radius:999px;height:6px;">
-        {% if b.allocated_days > 0 %}
-          {% widthratio b.used_days b.allocated_days 100 as pct %}
-          <div style="width:{{ pct }}%;background:{{ bar_color }};height:6px;border-radius:999px;"></div>
+      <div class="stat-icon
+        {% if 'Sick' in b.leave_type.name %}red
+        {% elif 'Vacation' in b.leave_type.name %}green
+        {% elif 'Maternity' in b.leave_type.name %}purple
+        {% elif 'Paternity' in b.leave_type.name %}indigo
+        {% else %}amber{% endif %}">
+        {% if 'Sick' in b.leave_type.name %}
+        <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        {% elif 'Vacation' in b.leave_type.name %}
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        {% elif 'Maternity' in b.leave_type.name %}
+        <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        {% elif 'Paternity' in b.leave_type.name %}
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        {% else %}
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         {% endif %}
       </div>
     </div>
   </div>
   {% empty %}
-  <div style="grid-column:1/-1;background:white;border-radius:16px;padding:2rem;text-align:center;color:var(--text-muted);">
-    No leave balances configured. Contact HR.
+  <div style="grid-column:1/-1;background:white;border-radius:12px;padding:2rem;text-align:center;color:var(--text-muted);border:1px solid var(--border);">
+    No leave balances configured. Please contact HR Admin.
   </div>
   {% endfor %}
 </div>
 
 <!-- Leave History -->
-<div style="background:white;border-radius:16px;box-shadow:var(--shadow-sm);border:1px solid var(--border-light);overflow:hidden;">
-
-  <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
-    <div>
-      <h2 style="font-size:1rem;font-weight:700;color:var(--text-primary);">Leave History</h2>
-      <p style="font-size:.82rem;color:var(--text-muted);margin-top:.1rem;">{{ leaves.count }} total request{{ leaves.count|pluralize }}</p>
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Leave History ({{ leaves.count }})</span>
+    <div style="display:flex;gap:8px;">
+      <a href="?" class="btn btn-outline btn-sm {% if not status_filter %}btn-primary{% endif %}">All</a>
+      <a href="?status=pending" class="btn btn-outline btn-sm">Pending</a>
+      <a href="?status=approved" class="btn btn-outline btn-sm">Approved</a>
+      <a href="?status=rejected" class="btn btn-outline btn-sm">Rejected</a>
     </div>
   </div>
-
-  {% if leaves %}
-  <div style="padding:1rem 1.5rem;display:flex;flex-direction:column;gap:.75rem;">
-    {% for leave in leaves %}
-    <div style="
-      border:1px solid var(--border-light);border-radius:12px;padding:1.1rem 1.25rem;
-      display:grid;grid-template-columns:48px 1fr auto auto;gap:1rem;align-items:center;
-      background:#FAFAFA;transition:all .2s;"
-      onmouseenter="this.style.background='white';this.style.borderColor='#C7D2FE';this.style.boxShadow='var(--shadow)';"
-      onmouseleave="this.style.background='#FAFAFA';this.style.borderColor='var(--border-light)';this.style.boxShadow='none';">
-
-      <!-- Icon -->
-      <div style="
-        width:44px;height:44px;border-radius:10px;flex-shrink:0;
-        display:flex;align-items:center;justify-content:center;font-size:1.25rem;
-        background:{% if leave.status == 'approved' %}#D1FAE5{% elif leave.status == 'rejected' %}#FEE2E2{% elif leave.status == 'cancelled' %}#F3F4F6{% else %}#EEF2FF{% endif %};">
-        {% if leave.status == 'approved' %}✅{% elif leave.status == 'rejected' %}❌{% elif leave.status == 'cancelled' %}🚫{% else %}⏳{% endif %}
-      </div>
-
-      <!-- Info -->
-      <div>
-        <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.35rem;flex-wrap:wrap;">
-          <span style="font-weight:700;font-size:.95rem;color:var(--text-primary);">{{ leave.leave_type.name }}</span>
-          <span style="
-            font-size:.72rem;font-weight:600;padding:.2rem .65rem;border-radius:999px;
-            {% if leave.status == 'pending' %}background:#FEF3C7;color:#92400E;
-            {% elif leave.status == 'approved' %}background:#D1FAE5;color:#065F46;
-            {% elif leave.status == 'rejected' %}background:#FEE2E2;color:#991B1B;
-            {% else %}background:#F3F4F6;color:#6B7280;{% endif %}">
-            {{ leave.status|capfirst }}
-          </span>
-        </div>
-        <div style="font-size:.83rem;color:var(--text-secondary);display:flex;flex-wrap:wrap;gap:.3rem .6rem;align-items:center;">
-          <span>📅 {{ leave.start_date|date:"M d, Y" }} → {{ leave.end_date|date:"M d, Y" }}</span>
-          <span style="color:var(--border);">·</span>
-          <span>{{ leave.total_days }} day{{ leave.total_days|pluralize }}</span>
-          <span style="color:var(--border);">·</span>
-          <span style="font-style:italic;color:var(--text-muted);">{{ leave.reason|truncatechars:55 }}</span>
-        </div>
-      </div>
-
-      <!-- Filed date -->
-      <div style="text-align:right;flex-shrink:0;">
-        <div style="font-size:.73rem;color:var(--text-muted);">Filed</div>
-        <div style="font-size:.83rem;font-weight:500;color:var(--text-secondary);white-space:nowrap;">{{ leave.created_at|date:"M d, Y" }}</div>
-      </div>
-
-      <!-- Cancel button -->
-      <div style="flex-shrink:0;">
-        {% if leave.status == 'pending' %}
-          <a href="{% url 'leave_cancel' leave.pk %}"
-             onclick="return confirm('Cancel this leave request?')"
-             style="
-               display:inline-flex;align-items:center;
-               background:#FEF2F2;color:#EF4444;
-               border:1px solid #FECACA;
-               padding:.4rem .9rem;border-radius:8px;
-               font-size:.82rem;font-weight:600;
-               text-decoration:none;transition:all .2s;white-space:nowrap;"
-             onmouseenter="this.style.background='#EF4444';this.style.color='white';"
-             onmouseleave="this.style.background='#FEF2F2';this.style.color='#EF4444';">
-            Cancel
-          </a>
-        {% else %}
-          <span style="color:var(--text-muted);font-size:.85rem;">—</span>
-        {% endif %}
-      </div>
-    </div>
-    {% endfor %}
+  <div class="table-wrapper">
+    <table class="ws-table">
+      <thead>
+        <tr>
+          <th>Leave Type</th>
+          <th>Start Date</th>
+          <th>End Date</th>
+          <th>Days</th>
+          <th>Reason</th>
+          <th>Filed On</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for leave in leaves %}
+        <tr>
+          <td><strong>{{ leave.leave_type.name }}</strong></td>
+          <td>{{ leave.start_date|date:"M d, Y" }}</td>
+          <td>{{ leave.end_date|date:"M d, Y" }}</td>
+          <td>{{ leave.get_working_days }} day{{ leave.get_working_days|pluralize }}</td>
+          <td style="max-width:200px;color:var(--text-muted);">{{ leave.reason|truncatechars:50 }}</td>
+          <td style="color:var(--text-muted);">{{ leave.filed_on|date:"M d, Y" }}</td>
+          <td><span class="badge badge-{{ leave.status }}">{{ leave.status|capfirst }}</span></td>
+          <td>
+            {% if leave.status == 'pending' %}
+            <a href="{% url 'leave_cancel' leave.pk %}"
+               onclick="return confirm('Cancel this leave request?')"
+               class="btn btn-danger btn-sm">Cancel</a>
+            {% else %}
+            <span style="color:var(--text-faint);">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted);">
+            No leave requests yet. Click File Leave Request to get started.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
-
-  {% else %}
-  <div style="padding:4rem 2rem;text-align:center;">
-    <div style="font-size:3.5rem;margin-bottom:1rem;">🏖️</div>
-    <h3 style="font-size:1.1rem;font-weight:700;color:var(--text-primary);margin-bottom:.5rem;">No Leave Requests Yet</h3>
-    <p style="color:var(--text-muted);font-size:.9rem;margin-bottom:1.5rem;">You haven't filed any leave requests.</p>
-    <a href="{% url 'leave_create' %}" style="
-      display:inline-flex;align-items:center;gap:.5rem;
-      background:var(--primary);color:white;
-      padding:.65rem 1.4rem;border-radius:10px;
-      font-weight:600;font-size:.9rem;text-decoration:none;">
-      + File Leave Request
-    </a>
-  </div>
-  {% endif %}
-
 </div>
+
 {% endblock %}

@@ -4,7 +4,7 @@ All routes with role-based access enforced at view level.
 """
 
 from django.urls import path
-from . import views_auth, views_employee, views_attendance, views_leave, views_payroll, views_reports
+from . import views_auth, views_employee, views_attendance, views_leave, views_payroll, views_reports, views_sphere
 
 urlpatterns = [
     # ── Authentication ────────────────────────────────────────────────────────
@@ -16,7 +16,7 @@ urlpatterns = [
     path('forgot-password/verify/', views_auth.forgot_password_verify,  name='forgot_password_verify'),
     path('reset-password/',         views_auth.reset_password,          name='reset_password'),
     path('setup-security-question/', views_auth.setup_security_question, name='setup_security_question'),
-    
+
     # ── Dashboards ────────────────────────────────────────────────────────────
     path('admin-dashboard/', views_employee.admin_dashboard, name='admin_dashboard'),
     path('employee-dashboard/', views_employee.employee_dashboard, name='employee_dashboard'),
@@ -34,6 +34,8 @@ urlpatterns = [
     path('attendance/clock-in/', views_attendance.clock_in, name='clock_in'),
     path('attendance/clock-out/', views_attendance.clock_out, name='clock_out'),
     path('attendance/my/', views_attendance.my_attendance, name='my_attendance'),
+    path('attendance/auto-absent/', views_attendance.run_auto_absent, name='run_auto_absent'),
+    path('my-schedule/', views_attendance.my_schedule, name='my_schedule'),
 
     # ── Attendance (Admin) ────────────────────────────────────────────────────
     path('attendance/', views_attendance.admin_attendance_list, name='admin_attendance_list'),
@@ -61,4 +63,9 @@ urlpatterns = [
 
     # ── Reports (Admin) ───────────────────────────────────────────────────────
     path('reports/', views_reports.reports_index, name='reports'),
+
+    # ── Sphere Assistant ──────────────────────────────────────────────────────
+    path('sphere/', views_sphere.sphere_view, name='sphere'),
+    path('sphere/chat/', views_sphere.sphere_chat, name='sphere_chat'),
+    path('sphere/logs/', views_sphere.sphere_logs, name='sphere_logs'),
 ]

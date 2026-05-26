@@ -1,194 +1,115 @@
 {% extends 'base.html' %}
 {% block title %}File Leave Request — WorkSphere{% endblock %}
+{% block page_title %}File Leave Request{% endblock %}
 
 {% block content %}
-
-<!-- Page Header -->
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;">
-  <div>
-    <h1 style="font-size:1.6rem;font-weight:800;color:var(--text-primary);margin-bottom:.25rem;">File Leave Request</h1>
-    <p style="color:var(--text-secondary);font-size:.9rem;">Submit a new leave request for approval</p>
-  </div>
-  <a href="{% url 'my_leaves' %}" style="
-    display:inline-flex;align-items:center;gap:.5rem;
-    background:white;color:var(--text-secondary);
-    border:1px solid var(--border-light);
-    padding:.6rem 1.2rem;border-radius:10px;
-    font-weight:600;font-size:.875rem;
-    text-decoration:none;transition:all .2s;"
-    onmouseenter="this.style.borderColor='var(--primary)';this.style.color='var(--primary)';"
-    onmouseleave="this.style.borderColor='var(--border-light)';this.style.color='var(--text-secondary)';">
-    ← My Leave Requests
-  </a>
-</div>
 
 <div style="display:grid;grid-template-columns:1fr 320px;gap:1.5rem;align-items:start;">
 
   <!-- Leave Form -->
-  <div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden;">
-    <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border-light);">
-      <h2 style="font-size:1rem;font-weight:700;color:var(--text-primary);">Leave Details</h2>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Leave Details</span>
+      <a href="{% url 'my_leaves' %}" class="btn btn-outline btn-sm">← Back</a>
     </div>
-    <div style="padding:1.5rem;">
+    <div class="card-body">
 
       {% if form.non_field_errors %}
-        <div style="background:#FEE2E2;border:1px solid #FECACA;border-radius:10px;padding:1rem;margin-bottom:1.25rem;">
-          {% for error in form.non_field_errors %}
-            <p style="margin:0;color:#991B1B;font-size:.875rem;">{{ error }}</p>
-          {% endfor %}
-        </div>
+      <div class="alert alert-error" style="margin-bottom:16px;">
+        {% for error in form.non_field_errors %}
+        <span>{{ error }}</span>
+        {% endfor %}
+      </div>
       {% endif %}
 
       <form method="post">
         {% csrf_token %}
 
-        <!-- Leave Type -->
-        <div style="margin-bottom:1.25rem;">
-          <label style="display:block;font-size:.85rem;font-weight:600;color:var(--text-primary);margin-bottom:.5rem;">
-            Leave Type <span style="color:#EF4444;">*</span>
-          </label>
+        <div class="form-group">
+          <label class="form-label">Leave Type <span style="color:#EF4444;">*</span></label>
           {{ form.leave_type }}
           {% if form.leave_type.errors %}
-            <p style="color:#EF4444;font-size:.8rem;margin-top:.3rem;">{{ form.leave_type.errors|join:", " }}</p>
+          <span class="form-error">{{ form.leave_type.errors|join:", " }}</span>
           {% endif %}
         </div>
 
-        <!-- Start & End Date -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem;">
-          <div>
-            <label style="display:block;font-size:.85rem;font-weight:600;color:var(--text-primary);margin-bottom:.5rem;">
-              Start Date <span style="color:#EF4444;">*</span>
-            </label>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Start Date <span style="color:#EF4444;">*</span></label>
             {{ form.start_date }}
             {% if form.start_date.errors %}
-              <p style="color:#EF4444;font-size:.8rem;margin-top:.3rem;">{{ form.start_date.errors|join:", " }}</p>
+            <span class="form-error">{{ form.start_date.errors|join:", " }}</span>
             {% endif %}
           </div>
-          <div>
-            <label style="display:block;font-size:.85rem;font-weight:600;color:var(--text-primary);margin-bottom:.5rem;">
-              End Date <span style="color:#EF4444;">*</span>
-            </label>
+          <div class="form-group">
+            <label class="form-label">End Date <span style="color:#EF4444;">*</span></label>
             {{ form.end_date }}
             {% if form.end_date.errors %}
-              <p style="color:#EF4444;font-size:.8rem;margin-top:.3rem;">{{ form.end_date.errors|join:", " }}</p>
+            <span class="form-error">{{ form.end_date.errors|join:", " }}</span>
             {% endif %}
           </div>
         </div>
 
-        <!-- Day Count Preview -->
-        <div id="day-count-box" style="display:none;background:var(--primary-bg);border:1px solid #C7D2FE;border-radius:10px;padding:.875rem 1rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:.75rem;">
-          <span style="font-size:1.25rem;">📅</span>
-          <div>
-            <div style="font-size:.78rem;color:var(--primary);font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Estimated Working Days</div>
-            <div id="day-count-value" style="font-size:1.4rem;font-weight:800;color:var(--primary);">0</div>
-          </div>
+        <div id="day-count-box" style="display:none;background:var(--primary-bg);border:1px solid #C7D2FE;border-radius:8px;padding:10px 14px;margin-bottom:16px;">
+          <div style="font-size:.75rem;color:var(--primary);font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Estimated Working Days</div>
+          <div id="day-count-value" style="font-size:1.4rem;font-weight:800;color:var(--primary);">0</div>
         </div>
 
-        <!-- Reason -->
-        <div style="margin-bottom:1.5rem;">
-          <label style="display:block;font-size:.85rem;font-weight:600;color:var(--text-primary);margin-bottom:.5rem;">
-            Reason <span style="color:#EF4444;">*</span>
-          </label>
+        <div class="form-group">
+          <label class="form-label">Reason <span style="color:#EF4444;">*</span></label>
           {{ form.reason }}
           {% if form.reason.errors %}
-            <p style="color:#EF4444;font-size:.8rem;margin-top:.3rem;">{{ form.reason.errors|join:", " }}</p>
+          <span class="form-error">{{ form.reason.errors|join:", " }}</span>
           {% endif %}
-          <p style="font-size:.8rem;color:var(--text-muted);margin-top:.4rem;">Provide a brief reason for your leave request.</p>
         </div>
 
-        <!-- Buttons -->
-        <div style="display:flex;gap:.75rem;">
-          <button type="submit" style="
-            display:inline-flex;align-items:center;gap:.5rem;
-            background:var(--primary);color:white;border:none;cursor:pointer;
-            padding:.7rem 1.4rem;border-radius:10px;font-weight:700;font-size:.9rem;
-            box-shadow:0 4px 12px rgba(79,70,229,0.3);transition:all .2s;"
-            onmouseenter="this.style.background='var(--primary-dark)';"
-            onmouseleave="this.style.background='var(--primary)';">
-            Submit Request
-          </button>
-          <a href="{% url 'my_leaves' %}" style="
-            display:inline-flex;align-items:center;
-            background:white;color:var(--text-secondary);
-            border:1px solid var(--border-light);
-            padding:.7rem 1.2rem;border-radius:10px;
-            font-weight:600;font-size:.9rem;
-            text-decoration:none;transition:all .2s;"
-            onmouseenter="this.style.borderColor='var(--primary)';this.style.color='var(--primary)';"
-            onmouseleave="this.style.borderColor='var(--border-light)';this.style.color='var(--text-secondary)';">
-            Cancel
-          </a>
+        <div style="display:flex;gap:10px;margin-top:8px;">
+          <button type="submit" class="btn btn-primary">Submit Request</button>
+          <a href="{% url 'my_leaves' %}" class="btn btn-outline">Cancel</a>
         </div>
       </form>
     </div>
   </div>
 
   <!-- Right Sidebar -->
-  <div style="display:flex;flex-direction:column;gap:1.25rem;">
+  <div style="display:flex;flex-direction:column;gap:16px;">
 
     <!-- Leave Balances -->
-    <div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden;">
-      <div style="padding:1.1rem 1.25rem;border-bottom:1px solid var(--border-light);">
-        <h2 style="font-size:.95rem;font-weight:700;color:var(--text-primary);">My Leave Balances</h2>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">My Leave Balances</span>
       </div>
-      <div style="padding:.75rem;">
+      <div class="card-body" style="padding:12px;">
         {% for b in balances %}
-        {% cycle '#4F46E5' '#22C55E' '#F59E0B' as bal_color silent %}
-        <div style="padding:.875rem 1rem;border-radius:12px;margin-bottom:.5rem;background:#FAFAFA;border:1px solid var(--border-light);position:relative;overflow:hidden;">
-          <div style="position:absolute;top:0;left:0;bottom:0;width:4px;background:{{ bal_color }};border-radius:4px 0 0 4px;"></div>
-          <div style="padding-left:.5rem;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
-              <span style="font-size:.85rem;font-weight:600;color:var(--text-primary);">{{ b.leave_type.name }}</span>
-              <span style="font-size:1.2rem;font-weight:800;color:{{ bal_color }};">{{ b.remaining_days }}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--text-muted);margin-bottom:.4rem;">
-              <span>{{ b.used_days }} used</span>
-              <span>{{ b.allocated_days }} total</span>
-            </div>
-            <div style="background:var(--border-light);border-radius:999px;height:5px;">
-              {% if b.allocated_days > 0 %}
-                {% widthratio b.used_days b.allocated_days 100 as pct %}
-                <div style="width:{{ pct }}%;background:{{ bal_color }};height:5px;border-radius:999px;"></div>
-              {% endif %}
-            </div>
+        <div style="padding:10px 12px;border-radius:8px;margin-bottom:8px;background:var(--bg);border:1px solid var(--border-light);">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:.85rem;font-weight:600;color:var(--text-primary);">{{ b.leave_type.name }}</span>
+            <span style="font-size:1.1rem;font-weight:800;color:var(--primary);">{{ b.remaining_days }} <span style="font-size:.7rem;font-weight:400;color:var(--text-muted);">/ {{ b.allocated_days }}</span></span>
           </div>
+          <div style="font-size:.72rem;color:var(--text-muted);margin-top:2px;">{{ b.used_days }} used · {{ b.remaining_days }} remaining</div>
         </div>
         {% empty %}
-        <p style="padding:.75rem;color:var(--text-muted);font-size:.85rem;text-align:center;">No balances configured. Contact HR.</p>
+        <p style="color:var(--text-muted);font-size:.85rem;text-align:center;padding:8px;">No balances configured. Contact HR.</p>
         {% endfor %}
       </div>
     </div>
 
     <!-- Leave Rules -->
-    <div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden;">
-      <div style="padding:1.1rem 1.25rem;border-bottom:1px solid var(--border-light);">
-        <h2 style="font-size:.95rem;font-weight:700;color:var(--text-primary);">Leave Rules</h2>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Leave Rules</span>
       </div>
-      <div style="padding:1rem 1.25rem;display:flex;flex-direction:column;gap:.6rem;">
-        <div style="display:flex;align-items:flex-start;gap:.6rem;font-size:.84rem;color:var(--text-secondary);">
-          <span style="color:#22C55E;flex-shrink:0;margin-top:.1rem;">✓</span>
-          <span>File at least <strong style="color:var(--text-primary);">2 days in advance</strong></span>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:.6rem;font-size:.84rem;color:var(--text-secondary);">
-          <span style="color:#22C55E;flex-shrink:0;margin-top:.1rem;">✓</span>
-          <span>No leave on <strong style="color:var(--text-primary);">weekends</strong></span>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:.6rem;font-size:.84rem;color:var(--text-secondary);">
-          <span style="color:#22C55E;flex-shrink:0;margin-top:.1rem;">✓</span>
-          <span>No leave for <strong style="color:var(--text-primary);">past dates</strong></span>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:.6rem;font-size:.84rem;color:var(--text-secondary);">
-          <span style="color:#22C55E;flex-shrink:0;margin-top:.1rem;">✓</span>
-          <span>No <strong style="color:var(--text-primary);">overlapping</strong> requests</span>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:.6rem;font-size:.84rem;color:var(--text-secondary);">
-          <span style="color:#22C55E;flex-shrink:0;margin-top:.1rem;">✓</span>
-          <span>Subject to <strong style="color:var(--text-primary);">admin approval</strong></span>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:.6rem;font-size:.84rem;color:var(--text-secondary);">
-          <span style="color:#22C55E;flex-shrink:0;margin-top:.1rem;">✓</span>
-          <span>Check your <strong style="color:var(--text-primary);">balance</strong> before filing</span>
-        </div>
+      <div class="card-body" style="padding:12px 16px;">
+        <ul style="list-style:disc;padding-left:18px;display:flex;flex-direction:column;gap:8px;margin:0;">
+          <li style="font-size:.84rem;color:var(--text-secondary);">File at least <strong style="color:var(--text-primary);">2 days in advance</strong></li>
+          <li style="font-size:.84rem;color:var(--text-secondary);">No leave on <strong style="color:var(--text-primary);">weekends</strong></li>
+          <li style="font-size:.84rem;color:var(--text-secondary);">No leave for <strong style="color:var(--text-primary);">past dates</strong></li>
+          <li style="font-size:.84rem;color:var(--text-secondary);">No <strong style="color:var(--text-primary);">overlapping</strong> requests</li>
+          <li style="font-size:.84rem;color:var(--text-secondary);">Subject to <strong style="color:var(--text-primary);">admin approval</strong></li>
+          <li style="font-size:.84rem;color:var(--text-secondary);">Check your <strong style="color:var(--text-primary);">balance</strong> before filing</li>
+          <li style="font-size:.84rem;color:var(--text-secondary);"><strong style="color:var(--text-primary);">Maternity Leave</strong> — female employees only, once per year</li>
+          <li style="font-size:.84rem;color:var(--text-secondary);"><strong style="color:var(--text-primary);">Paternity Leave</strong> — male employees only, once per year</li>
+        </ul>
       </div>
     </div>
 
@@ -222,7 +143,7 @@
     if (e < s) { box.style.display = 'none'; return; }
     const days = countWorkdays(s, e);
     val.textContent = days + ' day' + (days !== 1 ? 's' : '');
-    box.style.display = 'flex';
+    box.style.display = 'block';
   }
 
   startInput && startInput.addEventListener('change', updateDayCount);

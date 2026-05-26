@@ -44,9 +44,28 @@ def reports_index(request):
         'total_payroll':       float(total_payroll),
     }
 
+    # Directory filters
+    dir_search = request.GET.get('dir_search', '').strip()
+    dir_dept   = request.GET.get('dir_dept', '')
+    dir_status = request.GET.get('dir_status', '')
+
     employee_directory = Employee.objects.select_related('department').order_by(
         'department__name', 'last_name'
     )
+    if dir_search:
+        employee_directory = employee_directory.filter(
+            first_name__icontains=dir_search
+        ) | employee_directory.filter(
+            last_name__icontains=dir_search
+        ) | employee_directory.filter(
+            employee_id__icontains=dir_search
+        ) | employee_directory.filter(
+            position__icontains=dir_search
+        )
+    if dir_dept:
+        employee_directory = employee_directory.filter(department_id=dir_dept)
+    if dir_status:
+        employee_directory = employee_directory.filter(status=dir_status)
 
     departments = Department.objects.all()
     att_labels  = []
@@ -101,9 +120,25 @@ def reports_index(request):
                 att_absent.append(a)
                 att_late.append(l)
 
+    # Payroll filters
+    pay_search = request.GET.get('pay_search', '').strip()
+    pay_dept   = request.GET.get('pay_dept', '')
+    pay_status = request.GET.get('pay_status', '')
+
     payroll_summary = Payroll.objects.filter(
         month=month, year=year
     ).select_related('employee', 'employee__department').order_by('employee__last_name')
+
+    if pay_search:
+        payroll_summary = payroll_summary.filter(
+            employee__first_name__icontains=pay_search
+        ) | payroll_summary.filter(
+            employee__last_name__icontains=pay_search
+        )
+    if pay_dept:
+        payroll_summary = payroll_summary.filter(employee__department_id=pay_dept)
+    if pay_status:
+        payroll_summary = payroll_summary.filter(status=pay_status)
 
     leave_by_type = LeaveRequest.objects.filter(
         status='approved',
@@ -163,5 +198,12 @@ def reports_index(request):
         'employee_directory':      employee_directory,
         'payroll_summary':         payroll_summary,
         'report_type':             report_type,
+        'dir_search':              dir_search,
+        'dir_dept':                dir_dept,
+        'dir_status':              dir_status,
+        'pay_search':              pay_search,
+        'pay_dept':                pay_dept,
+        'pay_status':              pay_status,
+        'all_departments':         Department.objects.all().order_by('name'),
     }
     return render(request, 'reports/index.html', context)

@@ -64,6 +64,14 @@
             {% for e in form.email.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
           </div>
           <div class="form-group">
+            <label class="form-label">Gender / Sex *</label>
+            {{ form.gender }}
+            {% for e in form.gender.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+            <p style="font-size:.75rem;color:var(--text-muted);margin-top:.25rem;">
+              Required for leave eligibility — Maternity (Female) / Paternity (Male).
+            </p>
+          </div>
+          <div class="form-group">
             <label class="form-label">Contact Number</label>
             {{ form.contact_number }}
           </div>

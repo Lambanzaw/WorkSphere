@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}My Schedule{% endblock %}
+{% block page_title %}My Schedule{% endblock %}
+
+{% block topbar_actions %}
+{% if not today_attendance %}
+<a href="{% url 'clock_in' %}" class="btn btn-success btn-sm">Clock In</a>
+{% elif today_attendance and not today_attendance.time_out %}
+<a href="{% url 'clock_out' %}" class="btn btn-outline btn-sm">Clock Out</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+
+<!-- Month Filter -->
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-body" style="padding:14px 20px;">
+    <form method="get" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+      <div>
+        <label class="form-label">Month</label>
+        <select name="month" class="form-select" style="min-width:130px;">
+          {% for m_num, m_name in months %}
+          <option value="{{ m_num }}" {% if m_num == month %}selected{% endif %}>{{ m_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Year</label>
+        <select name="year" class="form-select">
+          {% for y in years %}
+          <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">View</button>
+      <a href="{% url 'my_attendance' %}?month={{ month }}&year={{ year }}" class="btn btn-outline btn-sm">List View</a>
+    </form>
+  </div>
+</div>
+
+<!-- Legend -->
+<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
+  <span style="font-size:.8rem;font-weight:600;color:var(--text-muted);">Legend:</span>
+  <span style="display:inline-flex;align-items:center;gap:5px;font-size:.78rem;">
+    <span style="width:12px;height:12px;border-radius:3px;background:#D1FAE5;display:inline-block;"></span> Present
+  </span>
+  <span style="display:inline-flex;align-items:center;gap:5px;font-size:.78rem;">
+    <span style="width:12px;height:12px;border-radius:3px;background:#FEF3C7;display:inline-block;"></span> Late
+  </span>
+  <span style="display:inline-flex;align-items:center;gap:5px;font-size:.78rem;">
+    <span style="width:12px;height:12px;border-radius:3px;background:#FEE2E2;display:inline-block;"></span> Absent
+  </span>
+  <span style="display:inline-flex;align-items:center;gap:5px;font-size:.78rem;">
+    <span style="width:12px;height:12px;border-radius:3px;background:#DBEAFE;display:inline-block;"></span> On Leave
+  </span>
+  <span style="display:inline-flex;align-items:center;gap:5px;font-size:.78rem;">
+    <span style="width:12px;height:12px;border-radius:3px;background:#F3F4F6;display:inline-block;"></span> Weekend
+  </span>
+  <span style="display:inline-flex;align-items:center;gap:5px;font-size:.78rem;">
+    <span style="width:12px;height:12px;border-radius:3px;background:#EEF2FF;border:2px solid #4F46E5;display:inline-block;"></span> Today
+  </span>
+</div>
+
+<!-- Calendar -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">{{ month_name }} — Work Schedule</span>
+    <span style="font-size:.8rem;color:var(--text-muted);">Mon–Fri · 8:00 AM – 5:00 PM</span>
+  </div>
+  <div style="padding:16px;">
+
+    <!-- Day Headers -->
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;">
+      {% for day in day_names %}
+      <div style="text-align:center;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+        color:{% if day == 'Sat' or day == 'Sun' %}#EF4444{% else %}var(--text-muted){% endif %};
+        padding:4px 0;">{{ day }}</div>
+      {% endfor %}
+    </div>
+
+    <!-- Weeks -->
+    {% for week in weeks %}
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;">
+      {% for day in week %}
+      {% if day is None %}
+      <div style="min-height:80px;"></div>
+      {% else %}
+
+      {% if day.leave %}
+        {% with bg="#DBEAFE" border="#BFDBFE" label="On Leave" label_color="#1E40AF" %}
+        <div style="min-height:80px;border-radius:10px;padding:8px;background:{{ bg }};border:1.5px solid {{ border }};
+          {% if day.is_today %}box-shadow:0 0 0 2px #4F46E5;{% endif %}
+          {% if day.is_weekend %}opacity:.6;{% endif %}
+          position:relative;">
+          <div style="font-size:.8rem;font-weight:700;color:var(--text-primary);margin-bottom:4px;">{{ day.day }}</div>
+          <div style="font-size:.68rem;font-weight:600;color:{{ label_color }};background:{{ border }};padding:2px 6px;border-radius:4px;display:inline-block;">{{ label }}</div>
+          <div style="font-size:.65rem;color:#1E40AF;margin-top:3px;">{{ day.leave.leave_type.name }}</div>
+        </div>
+        {% endwith %}
+
+      {% elif day.is_weekend %}
+      <div style="min-height:80px;border-radius:10px;padding:8px;background:#F9FAFB;border:1.5px solid #F3F4F6;
+        {% if day.is_today %}box-shadow:0 0 0 2px #4F46E5;{% endif %}">
+        <div style="font-size:.8rem;font-weight:700;color:#9CA3AF;">{{ day.day }}</div>
+        <div style="font-size:.68rem;color:#D1D5DB;margin-top:4px;">Rest Day</div>
+      </div>
+
+      {% elif day.is_future %}
+      <div style="min-height:80px;border-radius:10px;padding:8px;background:white;border:1.5px solid #F3F4F6;
+        {% if day.is_today %}background:#EEF2FF;border-color:#4F46E5;box-shadow:0 0 0 2px #4F46E5;{% endif %}">
+        <div style="font-size:.8rem;font-weight:700;color:{% if day.is_today %}#4F46E5{% else %}var(--text-primary){% endif %};">{{ day.day }}</div>
+        {% if day.is_today %}
+        <div style="font-size:.68rem;color:#4F46E5;font-weight:600;margin-top:4px;">Today</div>
+        <div style="font-size:.65rem;color:#6366f1;">8AM–5PM</div>
+        {% else %}
+        <div style="font-size:.65rem;color:#D1D5DB;margin-top:4px;">Scheduled</div>
+        <div style="font-size:.65rem;color:#E5E7EB;">8AM–5PM</div>
+        {% endif %}
+      </div>
+
+      {% elif day.attendance %}
+        {% with att=day.attendance %}
+        {% if att.status == 'present' %}
+          {% with bg="#D1FAE5" border="#A7F3D0" label_color="#065F46" %}
+          <div style="min-height:80px;border-radius:10px;padding:8px;background:{{ bg }};border:1.5px solid {{ border }};">
+            <div style="font-size:.8rem;font-weight:700;color:var(--text-primary);">{{ day.day }}</div>
+            <div style="font-size:.68rem;font-weight:600;color:{{ label_color }};margin-top:3px;">Present</div>
+            {% if att.time_in %}<div style="font-size:.65rem;color:{{ label_color }};">In: {{ att.time_in|time:"h:i A" }}</div>{% endif %}
+            {% if att.time_out %}<div style="font-size:.65rem;color:{{ label_color }};">Out: {{ att.time_out|time:"h:i A" }}</div>{% endif %}
+          </div>
+          {% endwith %}
+
+        {% elif att.status == 'late' %}
+          {% with bg="#FEF3C7" border="#FDE68A" label_color="#92400E" %}
+          <div style="min-height:80px;border-radius:10px;padding:8px;background:{{ bg }};border:1.5px solid {{ border }};">
+            <div style="font-size:.8rem;font-weight:700;color:var(--text-primary);">{{ day.day }}</div>
+            <div style="font-size:.68rem;font-weight:600;color:{{ label_color }};margin-top:3px;">Late</div>
+            {% if att.time_in %}<div style="font-size:.65rem;color:{{ label_color }};">In: {{ att.time_in|time:"h:i A" }}</div>{% endif %}
+            {% if att.time_out %}<div style="font-size:.65rem;color:{{ label_color }};">Out: {{ att.time_out|time:"h:i A" }}</div>{% endif %}
+          </div>
+          {% endwith %}
+
+        {% elif att.status == 'absent' %}
+          {% with bg="#FEE2E2" border="#FECACA" label_color="#991B1B" %}
+          <div style="min-height:80px;border-radius:10px;padding:8px;background:{{ bg }};border:1.5px solid {{ border }};">
+            <div style="font-size:.8rem;font-weight:700;color:var(--text-primary);">{{ day.day }}</div>
+            <div style="font-size:.68rem;font-weight:600;color:{{ label_color }};margin-top:3px;">Absent</div>
+            <div style="font-size:.65rem;color:{{ label_color }};">No clock-in</div>
+          </div>
+          {% endwith %}
+
+        {% elif att.status == 'half_day' %}
+          {% with bg="#FEF3C7" border="#FDE68A" label_color="#92400E" %}
+          <div style="min-height:80px;border-radius:10px;padding:8px;background:{{ bg }};border:1.5px solid {{ border }};">
+            <div style="font-size:.8rem;font-weight:700;color:var(--text-primary);">{{ day.day }}</div>
+            <div style="font-size:.68rem;font-weight:600;color:{{ label_color }};margin-top:3px;">Half Day</div>
+            {% if att.time_in %}<div style="font-size:.65rem;color:{{ label_color }};">In: {{ att.time_in|time:"h:i A" }}</div>{% endif %}
+          </div>
+          {% endwith %}
+
+        {% elif att.status == 'overtime' %}
+          {% with bg="#EDE9FE" border="#DDD6FE" label_color="#5B21B6" %}
+          <div style="min-height:80px;border-radius:10px;padding:8px;background:{{ bg }};border:1.5px solid {{ border }};">
+            <div style="font-size:.8rem;font-weight:700;color:var(--text-primary);">{{ day.day }}</div>
+            <div style="font-size:.68rem;font-weight:600;color:{{ label_color }};margin-top:3px;">Overtime</div>
+            {% if att.time_in %}<div style="font-size:.65rem;color:{{ label_color }};">In: {{ att.time_in|time:"h:i A" }}</div>{% endif %}
+            {% if att.time_out %}<div style="font-size:.65rem;color:{{ label_color }};">Out: {{ att.time_out|time:"h:i A" }}</div>{% endif %}
+          </div>
+          {% endwith %}
+
+        {% else %}
+        <div style="min-height:80px;border-radius:10px;padding:8px;background:#F9FAFB;border:1.5px solid #F3F4F6;">
+          <div style="font-size:.8rem;font-weight:700;">{{ day.day }}</div>
+        </div>
+        {% endif %}
+        {% endwith %}
+
+      {% else %}
+      {% if day.before_hired %}
+      <!-- Before hire date — show nothing -->
+      <div style="min-height:80px;border-radius:10px;padding:8px;background:#F9FAFB;border:1.5px solid #F3F4F6;">
+        <div style="font-size:.8rem;font-weight:700;color:#D1D5DB;">{{ day.day }}</div>
+        <div style="font-size:.65rem;color:#E5E7EB;margin-top:4px;">—</div>
+      </div>
+      {% else %}
+      <!-- Past weekday with no record -->
+      <div style="min-height:80px;border-radius:10px;padding:8px;background:#FEE2E2;border:1.5px solid #FECACA;">
+        <div style="font-size:.8rem;font-weight:700;color:var(--text-primary);">{{ day.day }}</div>
+        <div style="font-size:.68rem;font-weight:600;color:#991B1B;margin-top:3px;">Absent</div>
+        <div style="font-size:.65rem;color:#991B1B;">No record</div>
+      </div>
+      {% endif %}
+      {% endif %}
+
+      {% endif %}
+      {% endfor %}
+    </div>
+    {% endfor %}
+
+  </div>
+</div>
+
+{% endblock %}

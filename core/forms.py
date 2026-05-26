@@ -33,7 +33,6 @@ class LoginForm(forms.Form):
     )
 
     def clean(self):
-        """Strip whitespace to prevent XSS injection."""
         cleaned = super().clean()
         if cleaned.get('username'):
             cleaned['username'] = cleaned['username'].strip()
@@ -42,7 +41,6 @@ class LoginForm(forms.Form):
 
 # ─── EMPLOYEE FORMS ────────────────────────────────────────────────────────────
 class EmployeeCreateForm(forms.ModelForm):
-    """Form for creating a new employee with linked User account."""
     username = forms.CharField(
         max_length=150,
         help_text="Login username for the employee",
@@ -61,22 +59,23 @@ class EmployeeCreateForm(forms.ModelForm):
         model = Employee
         fields = [
             'employee_id', 'first_name', 'last_name', 'email',
-            'department', 'position', 'date_hired', 'basic_salary',
+            'department', 'position', 'gender', 'date_hired', 'basic_salary',
             'contact_number', 'address', 'photo', 'status'
         ]
         widgets = {
-            'employee_id': forms.TextInput(attrs={'class': 'form-control'}),
-            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'department': forms.Select(attrs={'class': 'form-select'}),
-            'position': forms.TextInput(attrs={'class': 'form-control'}),
-            'date_hired': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'basic_salary': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'employee_id':    forms.TextInput(attrs={'class': 'form-control'}),
+            'first_name':     forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name':      forms.TextInput(attrs={'class': 'form-control'}),
+            'email':          forms.EmailInput(attrs={'class': 'form-control'}),
+            'department':     forms.Select(attrs={'class': 'form-select'}),
+            'position':       forms.TextInput(attrs={'class': 'form-control'}),
+            'gender':         forms.Select(attrs={'class': 'form-select'}),
+            'date_hired':     forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'basic_salary':   forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'contact_number': forms.TextInput(attrs={'class': 'form-control'}),
-            'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'photo': forms.FileInput(attrs={'class': 'form-control'}),
-            'status': forms.Select(attrs={'class': 'form-select'}),
+            'address':        forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'photo':          forms.FileInput(attrs={'class': 'form-control'}),
+            'status':         forms.Select(attrs={'class': 'form-select'}),
         }
 
     def clean(self):
@@ -88,7 +87,6 @@ class EmployeeCreateForm(forms.ModelForm):
         if password and confirm_password and password != confirm_password:
             raise forms.ValidationError("Passwords do not match.")
 
-        # Check unique username
         if username and User.objects.filter(username=username).exists():
             raise forms.ValidationError(f"Username '{username}' is already taken.")
 
@@ -112,21 +110,22 @@ class EmployeeEditForm(forms.ModelForm):
         model = Employee
         fields = [
             'first_name', 'last_name', 'email', 'department', 'position',
-            'date_hired', 'basic_salary', 'contact_number', 'address',
-            'status', 'photo'
+            'gender', 'date_hired', 'basic_salary', 'contact_number',
+            'address', 'status', 'photo'
         ]
         widgets = {
-            'first_name':       forms.TextInput(attrs={'class': 'form-control'}),
-            'last_name':        forms.TextInput(attrs={'class': 'form-control'}),
-            'email':            forms.EmailInput(attrs={'class': 'form-control'}),
-            'department':       forms.Select(attrs={'class': 'form-select'}),
-            'position':         forms.TextInput(attrs={'class': 'form-control'}),
-            'date_hired':       forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'basic_salary':     forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'contact_number':   forms.TextInput(attrs={'class': 'form-control'}),
-            'address':          forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'status':           forms.Select(attrs={'class': 'form-select'}),
-            'photo':            forms.FileInput(attrs={'class': 'form-control'}),
+            'first_name':     forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name':      forms.TextInput(attrs={'class': 'form-control'}),
+            'email':          forms.EmailInput(attrs={'class': 'form-control'}),
+            'department':     forms.Select(attrs={'class': 'form-select'}),
+            'position':       forms.TextInput(attrs={'class': 'form-control'}),
+            'gender':         forms.Select(attrs={'class': 'form-select'}),
+            'date_hired':     forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'basic_salary':   forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'contact_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'address':        forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'status':         forms.Select(attrs={'class': 'form-select'}),
+            'photo':          forms.FileInput(attrs={'class': 'form-control'}),
         }
 
     def clean_email(self):
@@ -138,8 +137,6 @@ class EmployeeEditForm(forms.ModelForm):
 
 # ─── ATTENDANCE FORMS ──────────────────────────────────────────────────────────
 class AttendanceClockInForm(forms.Form):
-    """Employee clock-in form — validates HR attendance rules."""
-
     def __init__(self, *args, employee=None, **kwargs):
         self.employee = employee
         super().__init__(*args, **kwargs)
@@ -148,9 +145,7 @@ class AttendanceClockInForm(forms.Form):
         cleaned = super().clean()
         today = timezone.now().date()
 
-        # HR Rule: No attendance on weekends
         if today.weekday() >= 5:
-            # Check if today is a special working day
             from .models import SpecialWorkingDay
             if not SpecialWorkingDay.objects.filter(date=today).exists():
                 raise forms.ValidationError(
@@ -158,8 +153,14 @@ class AttendanceClockInForm(forms.Form):
                     "unless it's a designated special working day."
                 )
 
-        # HR Rule: One time-in per day only
         if self.employee:
+            # HR Rule: Cannot clock in before date hired
+            if today < self.employee.date_hired:
+                raise forms.ValidationError(
+                    f"You cannot clock in before your official hire date "
+                    f"({self.employee.date_hired.strftime('%B %d, %Y')})."
+                )
+
             if Attendance.objects.filter(employee=self.employee, date=today).exists():
                 raise forms.ValidationError(
                     "You have already clocked in today. Only one attendance record per day is allowed."
@@ -169,8 +170,6 @@ class AttendanceClockInForm(forms.Form):
 
 
 class AttendanceClockOutForm(forms.Form):
-    """Employee clock-out form."""
-
     def __init__(self, *args, attendance=None, **kwargs):
         self.attendance = attendance
         super().__init__(*args, **kwargs)
@@ -179,7 +178,6 @@ class AttendanceClockOutForm(forms.Form):
         cleaned = super().clean()
         current_time = timezone.now().time()
 
-        # HR Rule: Time-out cannot be earlier than time-in
         if self.attendance and self.attendance.time_in:
             if current_time <= self.attendance.time_in:
                 raise forms.ValidationError(
@@ -190,78 +188,127 @@ class AttendanceClockOutForm(forms.Form):
 
 
 class AttendanceAdminForm(forms.ModelForm):
-    """Admin form for override/manual attendance entry."""
-
     class Meta:
         model = Attendance
         fields = ['employee', 'date', 'time_in', 'time_out', 'status',
                   'overtime_hours', 'overtime_approved', 'admin_override',
                   'override_reason', 'notes']
         widgets = {
-            'employee': forms.Select(attrs={'class': 'form-select'}),
-            'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'time_in': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
-            'time_out': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
-            'status': forms.Select(attrs={'class': 'form-select'}),
+            'employee':       forms.Select(attrs={'class': 'form-select'}),
+            'date':           forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'time_in':        forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'time_out':       forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'status':         forms.Select(attrs={'class': 'form-select'}),
             'overtime_hours': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.5'}),
             'override_reason': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
-            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'notes':          forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
 
 
 # ─── LEAVE FORMS ───────────────────────────────────────────────────────────────
 class LeaveRequestForm(forms.ModelForm):
-    """
-    Employee leave request form.
-    Enforces all HR leave business rules.
-    """
-
     class Meta:
         model = LeaveRequest
         fields = ['leave_type', 'start_date', 'end_date', 'reason']
         widgets = {
             'leave_type': forms.Select(attrs={'class': 'form-select'}),
             'start_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'end_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'reason': forms.Textarea(attrs={'class': 'form-control', 'rows': 4,
-                                           'placeholder': 'Please provide a reason for your leave request...'}),
+            'end_date':   forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'reason':     forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 4,
+                'placeholder': 'Please provide a reason for your leave request...'
+            }),
         }
 
     def __init__(self, *args, employee=None, **kwargs):
         self.employee = employee
         super().__init__(*args, **kwargs)
 
+        # Filter leave types based on employee gender
+        if self.employee:
+            if self.employee.gender == 'male':
+                self.fields['leave_type'].queryset = LeaveType.objects.exclude(
+                    name='Maternity Leave'
+                )
+            elif self.employee.gender == 'female':
+                self.fields['leave_type'].queryset = LeaveType.objects.exclude(
+                    name='Paternity Leave'
+                )
+
     def clean(self):
         cleaned = super().clean()
         today = timezone.now().date()
         start_date = cleaned.get('start_date')
-        end_date = cleaned.get('end_date')
+        end_date   = cleaned.get('end_date')
         leave_type = cleaned.get('leave_type')
 
-        if start_date and end_date:
-            # HR Rule: Start date must be earlier than end date
-            if start_date > end_date:
-                raise forms.ValidationError("Start date must be before or on the same day as end date.")
+        # ── Gender validation ──────────────────────────────────────────────────
+        if leave_type and self.employee:
+            if leave_type.name == 'Maternity Leave' and self.employee.gender != 'female':
+                raise forms.ValidationError(
+                    "Maternity Leave is only available for female employees."
+                )
+            if leave_type.name == 'Paternity Leave' and self.employee.gender != 'male':
+                raise forms.ValidationError(
+                    "Paternity Leave is only available for male employees."
+                )
+            # ── Once per year validation ───────────────────────────────────────
+            if leave_type.name == 'Maternity Leave' and start_date:
+                already_filed = LeaveRequest.objects.filter(
+                    employee=self.employee,
+                    leave_type=leave_type,
+                    status__in=['pending', 'approved'],
+                    start_date__year=start_date.year,
+                )
+                if self.instance.pk:
+                    already_filed = already_filed.exclude(pk=self.instance.pk)
+                if already_filed.exists():
+                    raise forms.ValidationError(
+                        f"You have already filed a Maternity Leave request for {start_date.year}. "
+                        f"Maternity Leave can only be filed once per year."
+                    )
+            if leave_type.name == 'Paternity Leave' and start_date:
+                already_filed = LeaveRequest.objects.filter(
+                    employee=self.employee,
+                    leave_type=leave_type,
+                    status__in=['pending', 'approved'],
+                    start_date__year=start_date.year,
+                )
+                if self.instance.pk:
+                    already_filed = already_filed.exclude(pk=self.instance.pk)
+                if already_filed.exists():
+                    raise forms.ValidationError(
+                        f"You have already filed a Paternity Leave request for {start_date.year}. "
+                        f"Paternity Leave can only be filed once per year."
+                    )
 
+        if start_date and end_date:
+            # HR Rule: Start date must be before end date
+            if start_date > end_date:
+                raise forms.ValidationError(
+                    "Start date must be before or on the same day as end date."
+                )
             # HR Rule: Cannot file leave for past dates
             if start_date < today:
-                raise forms.ValidationError("You cannot file a leave request for past dates.")
-
+                raise forms.ValidationError(
+                    "You cannot file a leave request for past dates."
+                )
             # HR Rule: Must be filed at least 2 days in advance
             advance_days = (start_date - today).days
             if advance_days < 2:
                 raise forms.ValidationError(
-                    "Leave request must be filed at least 2 calendar days in advance. "
+                    f"Leave request must be filed at least 2 calendar days in advance. "
                     f"Your start date is only {advance_days} day(s) away."
                 )
-
             # HR Rule: No leave on weekends
             if start_date.weekday() >= 5:
-                raise forms.ValidationError("Leave start date cannot fall on a weekend (Saturday/Sunday).")
-
+                raise forms.ValidationError(
+                    "Leave start date cannot fall on a weekend (Saturday/Sunday)."
+                )
             if end_date.weekday() >= 5:
-                raise forms.ValidationError("Leave end date cannot fall on a weekend (Saturday/Sunday).")
-
+                raise forms.ValidationError(
+                    "Leave end date cannot fall on a weekend (Saturday/Sunday)."
+                )
             # HR Rule: No overlapping leave requests
             if self.employee:
                 overlapping = LeaveRequest.objects.filter(
@@ -274,13 +321,12 @@ class LeaveRequestForm(forms.ModelForm):
                     overlapping = overlapping.exclude(pk=self.instance.pk)
                 if overlapping.exists():
                     raise forms.ValidationError(
-                        "You already have a pending or approved leave request that overlaps with these dates."
+                        "You already have a pending or approved leave request "
+                        "that overlaps with these dates."
                     )
-
             # HR Rule: Check leave balance
             if leave_type and self.employee:
                 year = start_date.year
-                # Count working days requested
                 working_days = 0
                 current = start_date
                 while current <= end_date:
@@ -296,19 +342,20 @@ class LeaveRequestForm(forms.ModelForm):
                     )
                     if working_days > balance.remaining_days:
                         raise forms.ValidationError(
-                            f"Insufficient leave balance. You have {balance.remaining_days} day(s) remaining "
-                            f"for {leave_type.name}, but you're requesting {working_days} day(s)."
+                            f"Insufficient leave balance. You have {balance.remaining_days} "
+                            f"day(s) remaining for {leave_type.name}, but you're requesting "
+                            f"{working_days} day(s)."
                         )
                 except LeaveBalance.DoesNotExist:
                     raise forms.ValidationError(
-                        f"No leave balance allocated for {leave_type.name} in {year}. Please contact HR."
+                        f"No leave balance allocated for {leave_type.name} in {year}. "
+                        f"Please contact HR."
                     )
 
         return cleaned
 
 
 class LeaveReviewForm(forms.Form):
-    """Admin form for approving/rejecting leave requests."""
     action = forms.ChoiceField(
         choices=[('approved', 'Approve'), ('rejected', 'Reject')],
         widget=forms.RadioSelect(attrs={'class': 'form-check-input'})
@@ -333,27 +380,25 @@ class LeaveReviewForm(forms.Form):
 
 # ─── PAYROLL FORMS ─────────────────────────────────────────────────────────────
 class PayrollGenerateForm(forms.Form):
-    """Admin form to generate monthly payroll."""
-    
     sss_contribution = forms.DecimalField(
-    required=False, initial=0, min_value=0,
-    label='SSS Contribution (₱)',
-    widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'})
+        required=False, initial=0, min_value=0,
+        label='SSS Contribution (₱)',
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'})
     )
     philhealth_contribution = forms.DecimalField(
-    required=False, initial=0, min_value=0,
-    label='PhilHealth Contribution (₱)',
-    widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'})
-)
+        required=False, initial=0, min_value=0,
+        label='PhilHealth Contribution (₱)',
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'})
+    )
     pagibig_contribution = forms.DecimalField(
-    required=False, initial=0, min_value=0,
-    label='Pag-IBIG Contribution (₱)',
-    widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'})
+        required=False, initial=0, min_value=0,
+        label='Pag-IBIG Contribution (₱)',
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'})
     )
     withholding_tax = forms.DecimalField(
-    required=False, initial=0, min_value=0,
-    label='Withholding Tax (₱)',
-    widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'})
+        required=False, initial=0, min_value=0,
+        label='Withholding Tax (₱)',
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'})
     )
     employee = forms.ModelChoiceField(
         queryset=Employee.objects.filter(status='active'),
@@ -370,15 +415,11 @@ class PayrollGenerateForm(forms.Form):
         widget=forms.NumberInput(attrs={'class': 'form-control'})
     )
     bonuses = forms.DecimalField(
-        required=False,
-        initial=0,
-        min_value=0,
+        required=False, initial=0, min_value=0,
         widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'})
     )
     other_deductions = forms.DecimalField(
-        required=False,
-        initial=0,
-        min_value=0,
+        required=False, initial=0, min_value=0,
         widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'})
     )
     notes = forms.CharField(
@@ -389,8 +430,8 @@ class PayrollGenerateForm(forms.Form):
     def clean(self):
         cleaned = super().clean()
         employee = cleaned.get('employee')
-        month = cleaned.get('month')
-        year = cleaned.get('year')
+        month    = cleaned.get('month')
+        year     = cleaned.get('year')
 
         if employee and month and year:
             if Payroll.objects.filter(employee=employee, month=month, year=year).exists():
@@ -407,9 +448,10 @@ class DepartmentForm(forms.ModelForm):
         model = Department
         fields = ['name', 'description']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'name':        forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
+
 
 class ForgotPasswordEmailForm(forms.Form):
     email = forms.EmailField(

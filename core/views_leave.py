@@ -47,7 +47,9 @@ def leave_create(request):
     balances = LeaveBalance.objects.filter(
         employee=employee,
         year=timezone.now().year
-    ).select_related('leave_type')
+    ).select_related('leave_type').exclude(
+        leave_type__name='Maternity Leave' if employee.gender == 'male' else 'Paternity Leave'
+    )
 
     return render(request, 'leave/create.html', {
         'form': form,
@@ -73,7 +75,9 @@ def my_leaves(request):
     balances = LeaveBalance.objects.filter(
         employee=employee,
         year=timezone.now().year
-    ).select_related('leave_type')
+    ).select_related('leave_type').exclude(
+        leave_type__name='Maternity Leave' if employee.gender == 'male' else 'Paternity Leave'
+    )
 
     context = {
         'leaves': leaves,
