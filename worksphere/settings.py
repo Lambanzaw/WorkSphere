@@ -22,6 +22,15 @@ ALLOWED_HOSTS = os.getenv(
     'localhost,127.0.0.1'
 ).split(',')
 
+# ─── Railway / Proxy Fix (IMPORTANT) ───────────────
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+
+# ─── CSRF Fix (IMPORTANT) ──────────────────────────
+CSRF_TRUSTED_ORIGINS = [
+    "https://worksphere-production-81a0.up.railway.app",
+]
+
 # ─── Applications ────────────────────────────────
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -74,6 +83,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'worksphere.wsgi.application'
 
+# ─── Database (Railway PostgreSQL) ───────────────
 DATABASES = {
     'default': dj_database_url.config(
         default=os.getenv('DATABASE_URL'),
@@ -91,7 +101,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # ─── Session Settings ────────────────────────────
-SESSION_COOKIE_AGE = int(os.getenv('SESSION_COOKIE_AGE', 3600))  # 1 hour
+SESSION_COOKIE_AGE = int(os.getenv('SESSION_COOKIE_AGE', 3600))
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_SAVE_EVERY_REQUEST = True
 
@@ -135,6 +145,3 @@ if not DEBUG:
 
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
-    print("ALLOWED_HOSTS =", ALLOWED_HOSTS)
-    print("DEBUG HOST:", os.environ.get("ALLOWED_HOSTS"))
-    print("DEBUG DEBUG:", DEBUG)
