@@ -21,3 +21,20 @@ class CoreConfig(AppConfig):
         )
         scheduler.start()
         logger.info("Scheduler started — auto-absent will run at 12:05 AM daily.")
+        import os
+from django.contrib.auth import get_user_model
+
+def ready(self):
+    User = get_user_model()
+
+    username = os.getenv("DJANGO_SUPERUSER_USERNAME")
+    password = os.getenv("DJANGO_SUPERUSER_PASSWORD")
+    email = os.getenv("DJANGO_SUPERUSER_EMAIL")
+
+    if username and password:
+        if not User.objects.filter(username=username).exists():
+            User.objects.create_superuser(
+                username=username,
+                email=email or "",
+                password=password
+            )
