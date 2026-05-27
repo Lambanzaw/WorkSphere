@@ -84,17 +84,19 @@ TEMPLATES = [
 WSGI_APPLICATION = 'worksphere.wsgi.application'
 
 # ─── Database (Railway PostgreSQL) ───────────────
-DATABASE_URL = os.getenv('DATABASE_URL')
+# ─── Database (Railway PostgreSQL) ───────────────
+DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
     DATABASES = {
         'default': dj_database_url.config(
             default=DATABASE_URL,
             conn_max_age=600,
-            ssl_require=True
+            ssl_require=False,
         )
     }
-DATABASES = {
-    'default': {
+else:
+    DATABASES = {
+        'default': {
             'ENGINE': 'django.db.backends.postgresql',
             'NAME':     os.getenv('DB_NAME', 'worksphere_db'),
             'USER':     os.getenv('DB_USER', 'worksphere_user'),
