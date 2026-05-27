@@ -1,0 +1,34 @@
+[33mcommit 3f7d2905153b232fac8ecad432254778b5755862[m
+Author: clarkjustinecastillo <clarkjustinecastillo29@gmail.com>
+Date:   Wed May 27 23:00:12 2026 +0800
+
+    Bug Fixing Images
+
+[1mdiff --git a/templates/employees/list.html b/templates/employees/list.html[m
+[1mindex e918cde..9f165be 100644[m
+[1m--- a/templates/employees/list.html[m
+[1m+++ b/templates/employees/list.html[m
+[36m@@ -67,7 +67,7 @@[m
+               [m
+               {% if emp.photo %}[m
+                 <img [m
+[31m-                  src="{{ emp.photo.url }}"[m
+[32m+[m[32m                  src="/media/employee_photos/{{ emp.photo }}"[m
+                   alt="Employee Photo"[m
+                   style="[m
+                     width:38px;[m
+[1mdiff --git a/worksphere/settings.py b/worksphere/settings.py[m
+[1mindex bd91bc7..dca2ae8 100644[m
+[1m--- a/worksphere/settings.py[m
+[1m+++ b/worksphere/settings.py[m
+[36m@@ -136,8 +136,8 @@[m [mSTATICFILES_DIRS = [[m
+ STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'[m
+ [m
+ # ─── Media Files ────────────────────────────────[m
+[31m-MEDIA_URL = '/media/'[m
+[31m-MEDIA_ROOT = BASE_DIR / 'media'[m
+[32m+[m[32mMEDIA_URL = '/media/employee_photos/'[m
+[32m+[m[32mMEDIA_ROOT = BASE_DIR / 'media/employee_photos'[m
+ [m
+ # ─── Default Auto Field ──────────────────────────[m
+ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'[m
