@@ -540,7 +540,14 @@ async function swSend(text){
     var res=await fetch('/sphere/chat/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':swCsrf},body:JSON.stringify({message:msg,is_voice:swRecording})});
     var data=await res.json();
     document.getElementById('swTyping').classList.remove('show');
-    if(data.response){ swAppend('sphere',data.response); swSetStatus('Speaking...'); swSpeak(data.response,function(){ swSetStatus('Ready'); }); }
+    if(data.response){
+  swAppend('sphere',data.response);
+  swSetStatus('Speaking...');
+  swSpeak(data.response,function(){ swSetStatus('Ready'); });
+  if(data.navigate_url){
+    setTimeout(function(){ window.location.href = data.navigate_url; }, 1500);
+  }
+}
     else{ swAppend('sphere','Sorry, something went wrong.'); swSetStatus('Ready'); }
   }catch(e){ document.getElementById('swTyping').classList.remove('show'); swAppend('sphere','Connection error.'); swSetStatus('Ready'); }
 }

@@ -67,16 +67,9 @@
               
               {% if emp.photo %}
                 <img 
-                  src="/media/employee_photos/{{ emp.photo }}"
-                  alt="Employee Photo"
-                  style="
-                    width:38px;
-                    height:38px;
-                    border-radius:50%;
-                    object-fit:cover;
-                    flex-shrink:0;
-                    border:1px solid var(--border);
-                  "
+                src="{{ emp.photo.url }}"
+                alt="Employee Photo"
+                style="width:38px;height:38px;border-radius:50%;object-fit:cover;"
                 >
               {% else %}
                 <div style="
