@@ -22,7 +22,11 @@
           {% if employee.photo %}
           <div style="margin-bottom:.75rem;display:flex;align-items:center;gap:1rem;">
             <img src="{{ employee.photo.url }}"
-              style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid var(--border);">
+              style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid var(--border);"
+              onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+            <div style="width:72px;height:72px;border-radius:50%;background:var(--primary-bg);display:none;align-items:center;justify-content:center;font-size:1.25rem;font-weight:700;color:var(--primary);">
+              {{ employee.first_name|first }}{{ employee.last_name|first }}
+            </div>
             <div>
               <div style="font-size:.8rem;font-weight:600;">Current Photo</div>
               <div style="font-size:.75rem;color:var(--text-muted);">Upload a new one to replace it.</div>
@@ -67,11 +71,12 @@
             <label class="form-label">Gender / Sex *</label>
             {{ form.gender }}
             {% for e in form.gender.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
-          
           </div>
           <div class="form-group">
             <label class="form-label">Contact Number</label>
             {{ form.contact_number }}
+            <span class="form-error" id="phone-error-edit" style="display:none;"></span>
+            {% for e in form.contact_number.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
           </div>
         </div>
 
@@ -118,4 +123,49 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Phone validation
+var phoneInput = document.getElementById('id_contact_number');
+var phoneError = document.getElementById('phone-error-edit');
+
+if (phoneInput) {
+  // Block letters as you type — only allow digits and +
+  phoneInput.addEventListener('input', function () {
+    this.value = this.value.replace(/[^0-9+]/g, '');
+    // Limit length
+    if (this.value.startsWith('+63') && this.value.length > 13) {
+      this.value = this.value.slice(0, 13);
+    } else if (this.value.startsWith('0') && this.value.length > 11) {
+      this.value = this.value.slice(0, 11);
+    }
+  });
+
+  // Validate format on blur
+  phoneInput.addEventListener('blur', function () {
+    var val = this.value.trim();
+    if (!val) {
+      this.style.borderColor = '';
+      phoneError.style.display = 'none';
+      return;
+    }
+    var valid = /^(09\d{9}|(\+63)9\d{9})$/.test(val);
+    if (!valid) {
+      this.style.borderColor = '#EF4444';
+      phoneError.textContent = 'Enter a valid Philippine mobile number (e.g. 09171234567 or +639171234567).';
+      phoneError.style.display = 'block';
+    } else {
+      this.style.borderColor = '#22C55E';
+      phoneError.style.display = 'none';
+    }
+  });
+
+  phoneInput.addEventListener('focus', function () {
+    this.style.borderColor = '';
+    phoneError.style.display = 'none';
+  });
+}
+</script>
 {% endblock %}

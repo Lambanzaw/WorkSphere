@@ -3,15 +3,17 @@
 {% block page_title %}Attendance Management{% endblock %}
 
 {% block topbar_actions %}
-<form method="post" action="{% url 'run_auto_absent' %}" style="display:inline;">
-  {% csrf_token %}
-  <input type="hidden" name="days" value="30">
-  <button type="submit" class="btn btn-outline btn-sm"
-    onclick="return confirm('Auto-mark absent for all employees with no attendance in the past 30 weekdays?')">
-    Run Auto-Absent (30 days)
-  </button>
-</form>
-<a href="{% url 'admin_attendance_override' %}" class="btn btn-outline btn-sm">+ Manual Entry</a>
+<div style="display:flex;gap:8px;align-items:center;margin-left:auto;flex-wrap:wrap;justify-content:flex-end;">
+  <form method="post" action="{% url 'run_auto_absent' %}" style="display:inline;">
+    {% csrf_token %}
+    <input type="hidden" name="days" value="30">
+    <button type="submit" class="btn btn-outline btn-sm"
+      onclick="return confirm('Auto-mark absent for all employees with no attendance in the past 30 weekdays?')">
+      Run Auto-Absent (30 days)
+    </button>
+  </form>
+  <a href="{% url 'admin_attendance_override' %}" class="btn btn-outline btn-sm">+ Manual Entry</a>
+</div>
 {% endblock %}
 
 {% block content %}

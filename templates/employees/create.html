@@ -87,6 +87,8 @@
           <div class="form-group">
             <label class="form-label">Contact Number</label>
             {{ form.contact_number }}
+            <span class="form-error" id="phone-error-create" style="display:none;"></span>
+            {% for e in form.contact_number.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
           </div>
         </div>
 
@@ -146,6 +148,47 @@ function togglePw(fieldId, eyeId) {
     field.type = 'password';
     eye.textContent = 'Show';
   }
+}
+
+// Phone validation
+var phoneInput = document.getElementById('id_contact_number');
+var phoneError = document.getElementById('phone-error-create');
+
+if (phoneInput) {
+  // Block letters as you type — only allow digits and +
+  phoneInput.addEventListener('input', function () {
+    this.value = this.value.replace(/[^0-9+]/g, '');
+    // Limit length
+    if (this.value.startsWith('+63') && this.value.length > 13) {
+      this.value = this.value.slice(0, 13);
+    } else if (this.value.startsWith('0') && this.value.length > 11) {
+      this.value = this.value.slice(0, 11);
+    }
+  });
+
+  // Validate format on blur
+  phoneInput.addEventListener('blur', function () {
+    var val = this.value.trim();
+    if (!val) {
+      this.style.borderColor = '';
+      phoneError.style.display = 'none';
+      return;
+    }
+    var valid = /^(09\d{9}|(\+63)9\d{9})$/.test(val);
+    if (!valid) {
+      this.style.borderColor = '#EF4444';
+      phoneError.textContent = 'Enter a valid Philippine mobile number (e.g. 09171234567 or +639171234567).';
+      phoneError.style.display = 'block';
+    } else {
+      this.style.borderColor = '#22C55E';
+      phoneError.style.display = 'none';
+    }
+  });
+
+  phoneInput.addEventListener('focus', function () {
+    this.style.borderColor = '';
+    phoneError.style.display = 'none';
+  });
 }
 </script>
 {% endblock %}

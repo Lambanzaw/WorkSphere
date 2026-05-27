@@ -12,6 +12,7 @@ from .models import (
     LeaveBalance, Attendance, Payroll, SpecialWorkingDay
 )
 import datetime
+import re
 
 
 # ─── AUTHENTICATION FORMS ──────────────────────────────────────────────────────
@@ -37,6 +38,18 @@ class LoginForm(forms.Form):
         if cleaned.get('username'):
             cleaned['username'] = cleaned['username'].strip()
         return cleaned
+
+
+# ─── PHONE VALIDATOR ───────────────────────────────────────────────────────────
+def validate_ph_phone(number):
+    if not number:
+        return number
+    cleaned = re.sub(r'[\s\-]', '', number)
+    if not re.match(r'^(09\d{9}|(\+63)9\d{9})$', cleaned):
+        raise forms.ValidationError(
+            "Enter a valid Philippine mobile number (e.g. 09171234567 or +639171234567)."
+        )
+    return cleaned
 
 
 # ─── EMPLOYEE FORMS ────────────────────────────────────────────────────────────
@@ -72,7 +85,10 @@ class EmployeeCreateForm(forms.ModelForm):
             'gender':         forms.Select(attrs={'class': 'form-select'}),
             'date_hired':     forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'basic_salary':   forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'contact_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'contact_number': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'ex.09171234567'
+            }),
             'address':        forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'photo':          forms.FileInput(attrs={'class': 'form-control'}),
             'status':         forms.Select(attrs={'class': 'form-select'}),
@@ -104,6 +120,27 @@ class EmployeeCreateForm(forms.ModelForm):
             raise forms.ValidationError("This Employee ID is already in use.")
         return emp_id
 
+    def clean_contact_number(self):
+        return validate_ph_phone(self.cleaned_data.get('contact_number'))
+
+    def clean_first_name(self):
+        name = self.cleaned_data.get('first_name', '').strip()
+        if not re.match(r'^[a-zA-Z\s\-\.]+$', name):
+            raise forms.ValidationError("First name must contain letters only.")
+        return name
+
+    def clean_last_name(self):
+        name = self.cleaned_data.get('last_name', '').strip()
+        if not re.match(r'^[a-zA-Z\s\-\.]+$', name):
+            raise forms.ValidationError("Last name must contain letters only.")
+        return name
+
+    def clean_basic_salary(self):
+        salary = self.cleaned_data.get('basic_salary')
+        if salary is not None and salary < 0:
+            raise forms.ValidationError("Basic salary cannot be negative.")
+        return salary
+
 
 class EmployeeEditForm(forms.ModelForm):
     class Meta:
@@ -122,7 +159,10 @@ class EmployeeEditForm(forms.ModelForm):
             'gender':         forms.Select(attrs={'class': 'form-select'}),
             'date_hired':     forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'basic_salary':   forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'contact_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'contact_number': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '09171234567 or +639171234567'
+            }),
             'address':        forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'status':         forms.Select(attrs={'class': 'form-select'}),
             'photo':          forms.FileInput(attrs={'class': 'form-control'}),
@@ -133,6 +173,27 @@ class EmployeeEditForm(forms.ModelForm):
         if Employee.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
             raise forms.ValidationError("This email is already registered to another employee.")
         return email
+
+    def clean_contact_number(self):
+        return validate_ph_phone(self.cleaned_data.get('contact_number'))
+
+    def clean_first_name(self):
+        name = self.cleaned_data.get('first_name', '').strip()
+        if not re.match(r'^[a-zA-Z\s\-\.]+$', name):
+            raise forms.ValidationError("First name must contain letters only.")
+        return name
+
+    def clean_last_name(self):
+        name = self.cleaned_data.get('last_name', '').strip()
+        if not re.match(r'^[a-zA-Z\s\-\.]+$', name):
+            raise forms.ValidationError("Last name must contain letters only.")
+        return name
+
+    def clean_basic_salary(self):
+        salary = self.cleaned_data.get('basic_salary')
+        if salary is not None and salary < 0:
+            raise forms.ValidationError("Basic salary cannot be negative.")
+        return salary
 
 
 # ─── ATTENDANCE FORMS ──────────────────────────────────────────────────────────
@@ -154,7 +215,6 @@ class AttendanceClockInForm(forms.Form):
                 )
 
         if self.employee:
-            # HR Rule: Cannot clock in before date hired
             if today < self.employee.date_hired:
                 raise forms.ValidationError(
                     f"You cannot clock in before your official hire date "
@@ -194,14 +254,14 @@ class AttendanceAdminForm(forms.ModelForm):
                   'overtime_hours', 'overtime_approved', 'admin_override',
                   'override_reason', 'notes']
         widgets = {
-            'employee':       forms.Select(attrs={'class': 'form-select'}),
-            'date':           forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'time_in':        forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
-            'time_out':       forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
-            'status':         forms.Select(attrs={'class': 'form-select'}),
-            'overtime_hours': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.5'}),
+            'employee':        forms.Select(attrs={'class': 'form-select'}),
+            'date':            forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'time_in':         forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'time_out':        forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'status':          forms.Select(attrs={'class': 'form-select'}),
+            'overtime_hours':  forms.NumberInput(attrs={'class': 'form-control', 'step': '0.5'}),
             'override_reason': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
-            'notes':          forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'notes':           forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
 
 
@@ -224,7 +284,6 @@ class LeaveRequestForm(forms.ModelForm):
         self.employee = employee
         super().__init__(*args, **kwargs)
 
-        # Filter leave types based on employee gender
         if self.employee:
             if self.employee.gender == 'male':
                 self.fields['leave_type'].queryset = LeaveType.objects.exclude(
@@ -242,7 +301,6 @@ class LeaveRequestForm(forms.ModelForm):
         end_date   = cleaned.get('end_date')
         leave_type = cleaned.get('leave_type')
 
-        # ── Gender validation ──────────────────────────────────────────────────
         if leave_type and self.employee:
             if leave_type.name == 'Maternity Leave' and self.employee.gender != 'female':
                 raise forms.ValidationError(
@@ -252,7 +310,6 @@ class LeaveRequestForm(forms.ModelForm):
                 raise forms.ValidationError(
                     "Paternity Leave is only available for male employees."
                 )
-            # ── Once per year validation ───────────────────────────────────────
             if leave_type.name == 'Maternity Leave' and start_date:
                 already_filed = LeaveRequest.objects.filter(
                     employee=self.employee,
@@ -283,24 +340,20 @@ class LeaveRequestForm(forms.ModelForm):
                     )
 
         if start_date and end_date:
-            # HR Rule: Start date must be before end date
             if start_date > end_date:
                 raise forms.ValidationError(
                     "Start date must be before or on the same day as end date."
                 )
-            # HR Rule: Cannot file leave for past dates
             if start_date < today:
                 raise forms.ValidationError(
                     "You cannot file a leave request for past dates."
                 )
-            # HR Rule: Must be filed at least 2 days in advance
             advance_days = (start_date - today).days
             if advance_days < 2:
                 raise forms.ValidationError(
                     f"Leave request must be filed at least 2 calendar days in advance. "
                     f"Your start date is only {advance_days} day(s) away."
                 )
-            # HR Rule: No leave on weekends
             if start_date.weekday() >= 5:
                 raise forms.ValidationError(
                     "Leave start date cannot fall on a weekend (Saturday/Sunday)."
@@ -309,7 +362,6 @@ class LeaveRequestForm(forms.ModelForm):
                 raise forms.ValidationError(
                     "Leave end date cannot fall on a weekend (Saturday/Sunday)."
                 )
-            # HR Rule: No overlapping leave requests
             if self.employee:
                 overlapping = LeaveRequest.objects.filter(
                     employee=self.employee,
@@ -324,7 +376,6 @@ class LeaveRequestForm(forms.ModelForm):
                         "You already have a pending or approved leave request "
                         "that overlaps with these dates."
                     )
-            # HR Rule: Check leave balance
             if leave_type and self.employee:
                 year = start_date.year
                 working_days = 0
@@ -333,7 +384,6 @@ class LeaveRequestForm(forms.ModelForm):
                     if current.weekday() < 5:
                         working_days += 1
                     current += datetime.timedelta(days=1)
-
                 try:
                     balance = LeaveBalance.objects.get(
                         employee=self.employee,
@@ -452,6 +502,14 @@ class DepartmentForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
+    def clean_name(self):
+        name = self.cleaned_data.get('name', '').strip()
+        if Department.objects.filter(name__iexact=name).exclude(
+            pk=self.instance.pk if self.instance else None
+        ).exists():
+            raise forms.ValidationError("A department with this name already exists.")
+        return name
+
 
 class ForgotPasswordEmailForm(forms.Form):
     email = forms.EmailField(
@@ -527,7 +585,6 @@ class ResetPasswordForm(forms.Form):
         if pw and cpw and pw != cpw:
             raise forms.ValidationError("Passwords do not match.")
 
-        import re
         if pw:
             if len(pw) < 8:
                 raise forms.ValidationError("Password must be at least 8 characters.")

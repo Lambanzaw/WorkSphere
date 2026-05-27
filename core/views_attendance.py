@@ -72,24 +72,54 @@ def clock_in(request):
         messages.warning(request, "You have already clocked in today.")
         return redirect('my_attendance')
 
+    # Block clock-in outside allowed hours (6:00 AM to 5:00 PM only)
+    allowed_start = datetime.time(6, 0, 0)
+    allowed_end   = datetime.time(17, 0, 0)
+    if now_time < allowed_start or now_time >= allowed_end:
+        messages.error(
+            request,
+            f"Clock-in is only allowed between 6:00 AM and 5:00 PM. "
+            f"Current time is {now_time.strftime('%I:%M %p')}."
+        )
+        return redirect('my_attendance')
+
     if request.method == 'POST':
         form = AttendanceClockInForm(request.POST, employee=employee)
         if form.is_valid():
             with transaction.atomic():
                 standard_start = datetime.time(8, 0, 0)
-                is_late = now_time > standard_start
-                status  = 'late' if is_late else 'present'
+                cutoff_time    = datetime.time(17, 0, 0)
+
+                if now_time >= cutoff_time:
+                    status = 'absent'
+                elif now_time > standard_start:
+                    status = 'late'
+                else:
+                    status = 'present'
+
                 Attendance.objects.create(
                     employee=employee,
                     date=today,
                     time_in=now_time,
                     status=status,
                 )
-                messages.success(
-                    request,
-                    f"Clocked in at {now_time.strftime('%I:%M %p')}. "
-                    + ("You are late today." if is_late else "Have a productive day!")
-                )
+
+                if status == 'absent':
+                    messages.warning(
+                        request,
+                        f"Clock-in at {now_time.strftime('%I:%M %p')} is after 5:00 PM. "
+                        f"Your attendance has been marked as Absent."
+                    )
+                elif status == 'late':
+                    messages.warning(
+                        request,
+                        f"Clocked in at {now_time.strftime('%I:%M %p')}. You are late today."
+                    )
+                else:
+                    messages.success(
+                        request,
+                        f"Clocked in at {now_time.strftime('%I:%M %p')}. Have a productive day!"
+                    )
                 return redirect('my_attendance')
     else:
         form = AttendanceClockInForm(employee=employee)

@@ -3,32 +3,47 @@
 {% block page_title %}Clock In{% endblock %}
 
 {% block content %}
-<div class="clock-card">
-  <div class="card" style="padding: 32px;">
-    <div style="text-align: center;">
-      <h2 style="font-size: 1rem; color: var(--text-secondary); margin-bottom: 8px;">{{ today|date:"l, F d, Y" }}</h2>
-      <div class="clock-display live-clock"></div>
+<div style="max-width:480px;margin:0 auto;">
+  <div class="card">
+    <div style="padding:40px 32px;text-align:center;">
+
+      <!-- Date -->
+      <p style="font-size:.85rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">
+        {{ today|date:"l, F d, Y" }}
+      </p>
+
+      <!-- Live Clock -->
+      <div class="live-clock" style="font-size:3.5rem;font-weight:800;color:var(--text-primary);letter-spacing:-2px;line-height:1;margin-bottom:6px;font-variant-numeric:tabular-nums;"></div>
+
+      <!-- Standard time notice -->
+      <p style="font-size:.78rem;color:var(--text-muted);margin-bottom:28px;">
+        Standard start time: <strong>8:00 AM</strong> — After 8:00 AM is marked Late · After 5:00 PM is marked Absent
+      </p>
 
       {% if is_weekend and not is_special %}
-      <div class="alert alert-warning" style="margin: 20px 0;">
+      <div class="alert alert-warning" style="margin-bottom:20px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         <span>Today is a weekend. Attendance is not allowed unless it's a designated special working day.</span>
       </div>
       {% else %}
-      <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 0.875rem;">Standard time: 8:00 AM — Arriving after 8:00 AM will be marked as late.</p>
 
       {% if form.non_field_errors %}
-      <div class="alert alert-error">{% for e in form.non_field_errors %}<span>{{ e }}</span>{% endfor %}</div>
+      <div class="alert alert-error" style="margin-bottom:20px;">
+        {% for e in form.non_field_errors %}<span>{{ e }}</span>{% endfor %}
+      </div>
       {% endif %}
 
       <form method="post">
         {% csrf_token %}
-        <button type="submit" class="btn btn-success btn-lg" style="width: 100%; justify-content: center; font-size: 1.1rem; padding: 14px;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+        <button type="submit" class="btn btn-success" style="width:100%;justify-content:center;font-size:1rem;font-weight:700;padding:16px 20px;border-radius:12px;gap:10px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
           Clock In Now
         </button>
       </form>
+
+      <a href="{% url 'employee_dashboard' %}" style="display:block;margin-top:14px;font-size:.8rem;color:var(--text-muted);text-decoration:none;">← Back to Dashboard</a>
       {% endif %}
+
     </div>
   </div>
 </div>

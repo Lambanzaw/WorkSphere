@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}My Profile{% endblock %}
 {% block page_title %}My Profile{% endblock %}
 
@@ -9,16 +10,20 @@
       <div style="display:flex;gap:20px;align-items:center;">
         {% if employee.photo %}
           <img src="{{ employee.photo.url }}"
-            style="width:72px;height:72px;border-radius:18px;object-fit:cover;flex-shrink:0;border:2px solid var(--border);">
+            style="width:80px;height:80px;border-radius:18px;object-fit:cover;flex-shrink:0;border:2px solid var(--border);"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+          <div style="width:80px;height:80px;border-radius:18px;background:var(--primary);display:none;align-items:center;justify-content:center;color:white;font-size:1.75rem;font-weight:800;flex-shrink:0;">
+            {{ employee.first_name|slice:":1" }}{{ employee.last_name|slice:":1" }}
+          </div>
         {% else %}
-          <div style="width:72px;height:72px;border-radius:18px;background:var(--primary);display:flex;align-items:center;justify-content:center;color:white;font-size:1.75rem;font-weight:800;flex-shrink:0;">
+          <div style="width:80px;height:80px;border-radius:18px;background:var(--primary);display:flex;align-items:center;justify-content:center;color:white;font-size:1.75rem;font-weight:800;flex-shrink:0;">
             {{ employee.first_name|slice:":1" }}{{ employee.last_name|slice:":1" }}
           </div>
         {% endif %}
         <div>
-          <h2>{{ employee.get_full_name }}</h2>
-          <p style="color:var(--text-secondary);">{{ employee.position }} · {{ employee.department }}</p>
-          <p style="font-size:.8rem;color:var(--text-muted);">ID: {{ employee.employee_id }} · Hired: {{ employee.date_hired|date:"F Y" }}</p>
+          <h2 style="font-size:1.3rem;font-weight:800;color:var(--text-primary);margin-bottom:4px;">{{ employee.get_full_name }}</h2>
+          <p style="color:var(--text-secondary);font-size:.875rem;">{{ employee.position }} · {{ employee.department }}</p>
+          <p style="font-size:.78rem;color:var(--text-muted);">ID: {{ employee.employee_id }} · Hired: {{ employee.date_hired|date:"F Y" }}</p>
         </div>
       </div>
     </div>
@@ -110,19 +115,8 @@
           <div style="font-size:2rem;font-weight:800;color:var(--text-primary);line-height:1;">
             {{ bal.remaining_days }}
           </div>
-          <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:10px;">
+          <div style="font-size:.75rem;color:var(--text-muted);margin-top:2px;">
             days remaining of {{ bal.allocated_days }}
-          </div>
-          <div style="height:5px;background:var(--border);border-radius:3px;">
-            {% if bal.allocated_days > 0 %}
-            {% widthratio bal.remaining_days bal.allocated_days 100 as pct %}
-            <div style="height:100%;border-radius:3px;width:{{ pct }}%;
-              background:{% if 'Sick' in bal.leave_type.name %}#DC2626
-              {% elif 'Vacation' in bal.leave_type.name %}#059669
-              {% elif 'Maternity' in bal.leave_type.name %}#EC4899
-              {% elif 'Paternity' in bal.leave_type.name %}#4F46E5
-              {% else %}#D97706{% endif %};"></div>
-            {% endif %}
           </div>
         </div>
         {% empty %}

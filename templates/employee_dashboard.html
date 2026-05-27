@@ -10,21 +10,66 @@
 </a>
 {% elif today_attendance and not today_attendance.time_out %}
 <a href="{% url 'clock_out' %}" class="btn btn-outline btn-sm">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
   Clock Out
 </a>
 {% endif %}
 {% endblock %}
 
+{% block extra_css %}
+<style>
+.sw-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+.sw-table-wrap .ws-table {
+  min-width: 480px;
+  width: max-content;
+}
+.sw-table-wrap .ws-table th,
+.sw-table-wrap .ws-table td {
+  white-space: nowrap;
+}
+.sw-hint {
+  display: none;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-faint);
+  padding: 3px 0 1px;
+  transition: opacity .4s;
+}
+@media (max-width: 768px) {
+  .sw-hint { display: block; }
+  .sw-table-wrap {
+    overflow-x: scroll !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .sw-table-wrap .ws-table {
+    min-width: 480px !important;
+    width: max-content !important;
+    table-layout: auto !important;
+  }
+  .sw-table-wrap .ws-table th,
+  .sw-table-wrap .ws-table td {
+    white-space: nowrap !important;
+    min-width: 80px;
+  }
+}
+</style>
+{% endblock %}
+
 {% block content %}
+
 <!-- Welcome -->
-<div style="margin-bottom: 24px;">
-  <h1 style="font-size: 1.4rem;">Good day, {{ employee.first_name }}!</h1>
-  <p style="color: var(--text-secondary);">{{ today|date:"l, F d, Y" }}</p>
+<div style="margin-bottom:20px;">
+  <h1 style="font-size:1.3rem;font-weight:800;color:var(--text-primary);">Good day, {{ employee.first_name }}!</h1>
+  <p style="color:var(--text-muted);font-size:.85rem;">{{ today|date:"l, F d, Y" }}</p>
 </div>
 
 <!-- Stats -->
-<div class="stats-grid">
+<div class="stats-grid" style="margin-bottom:20px;">
   <div class="stat-card">
     <div class="stat-card-header">
       <span class="stat-card-label">Today's Status</span>
@@ -33,12 +78,10 @@
       </div>
     </div>
     {% if today_attendance %}
-    <div class="stat-value" style="font-size: 1.1rem;">{{ today_attendance.time_in|time:"h:i A" }}</div>
-    <div class="stat-sub">
-      Clocked in · {% if today_attendance.time_out %}Out: {{ today_attendance.time_out|time:"h:i A" }}{% else %}Still working{% endif %}
-    </div>
+    <div class="stat-value" style="font-size:1.1rem;">{{ today_attendance.time_in|time:"h:i A" }}</div>
+    <div class="stat-sub">Clocked in · {% if today_attendance.time_out %}Out: {{ today_attendance.time_out|time:"h:i A" }}{% else %}Still working{% endif %}</div>
     {% else %}
-    <div class="stat-value" style="font-size: 1rem; color: var(--text-muted);">Not yet</div>
+    <div class="stat-value" style="font-size:1rem;color:var(--text-muted);">Not yet</div>
     <div class="stat-sub">Haven't clocked in today</div>
     {% endif %}
   </div>
@@ -47,10 +90,10 @@
     <div class="stat-card-header">
       <span class="stat-card-label">Position</span>
       <div class="stat-icon indigo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
       </div>
     </div>
-    <div class="stat-value" style="font-size: 1rem;">{{ employee.position }}</div>
+    <div class="stat-value" style="font-size:1rem;">{{ employee.position }}</div>
     <div class="stat-sub">{{ employee.department }}</div>
   </div>
 
@@ -73,35 +116,45 @@
       </div>
     </div>
     {% if latest_payroll %}
-    <div class="stat-value" style="font-size: 1.2rem;">₱{{ latest_payroll.net_salary|floatformat:0 }}</div>
+    <div class="stat-value" style="font-size:1.2rem;">₱{{ latest_payroll.net_salary|floatformat:0 }}</div>
     <div class="stat-sub">{{ latest_payroll.get_month_name }}</div>
     {% else %}
-    <div class="stat-value" style="font-size: 1rem; color: var(--text-muted);">—</div>
+    <div class="stat-value" style="font-size:1rem;color:var(--text-muted);">—</div>
     <div class="stat-sub">No payslip yet</div>
     {% endif %}
   </div>
 </div>
 
+<!-- Tables side by side -->
 <div class="grid-2">
+
   <!-- Recent Attendance -->
   <div class="card">
     <div class="card-header">
       <span class="card-title">Recent Attendance</span>
       <a href="{% url 'my_attendance' %}" class="btn btn-outline btn-sm">View All</a>
     </div>
-    <div class="table-wrapper">
+    <p class="sw-hint" id="att-hint">← Swipe to see more →</p>
+    <div class="sw-table-wrap" id="att-wrap">
       <table class="ws-table">
-        <thead><tr><th>Date</th><th>In</th><th>Out</th><th>Status</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Clock In</th>
+            <th>Clock Out</th>
+            <th>Status</th>
+          </tr>
+        </thead>
         <tbody>
           {% for att in recent_attendance %}
           <tr>
-            <td>{{ att.date|date:"M d" }}</td>
+            <td>{{ att.date|date:"M d, Y" }}</td>
             <td>{{ att.time_in|time:"h:i A"|default:"—" }}</td>
             <td>{{ att.time_out|time:"h:i A"|default:"—" }}</td>
             <td><span class="badge badge-{{ att.status }}">{{ att.get_status_display }}</span></td>
           </tr>
           {% empty %}
-          <tr><td colspan="4" class="text-center text-muted" style="padding: 24px;">No records yet</td></tr>
+          <tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted);">No records yet</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -114,22 +167,47 @@
       <span class="card-title">My Leave Requests</span>
       <a href="{% url 'leave_create' %}" class="btn btn-primary btn-sm">+ File Leave</a>
     </div>
-    <div class="table-wrapper">
+    <p class="sw-hint" id="leave-hint">← Swipe to see more →</p>
+    <div class="sw-table-wrap" id="leave-wrap">
       <table class="ws-table">
-        <thead><tr><th>Type</th><th>Dates</th><th>Status</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Status</th>
+          </tr>
+        </thead>
         <tbody>
           {% for leave in recent_leaves %}
           <tr>
             <td>{{ leave.leave_type.name }}</td>
-            <td style="font-size: 0.8rem;">{{ leave.start_date|date:"M d" }} – {{ leave.end_date|date:"M d" }}</td>
+            <td>{{ leave.start_date|date:"M d, Y" }}</td>
+            <td>{{ leave.end_date|date:"M d, Y" }}</td>
             <td><span class="badge badge-{{ leave.status }}">{{ leave.get_status_display }}</span></td>
           </tr>
           {% empty %}
-          <tr><td colspan="3" class="text-center text-muted" style="padding: 24px;">No leave requests</td></tr>
+          <tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted);">No leave requests</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
   </div>
+
 </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+['att-wrap','leave-wrap'].forEach(function(id) {
+  var wrap = document.getElementById(id);
+  var hint = document.getElementById(id.replace('-wrap','-hint'));
+  if (wrap && hint) {
+    wrap.addEventListener('scroll', function() {
+      hint.style.opacity = '0';
+    }, { once: true });
+  }
+});
+</script>
 {% endblock %}
