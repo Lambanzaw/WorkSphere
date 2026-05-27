@@ -17,6 +17,7 @@
         <div class="alert alert-error">{% for e in form.non_field_errors %}<span>{{ e }}</span>{% endfor %}</div>
         {% endif %}
 
+        <!-- Account Credentials -->
         <h3 style="font-size:0.875rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:16px;">Account Credentials</h3>
         <div class="grid-2">
           <div class="form-group">
@@ -34,9 +35,7 @@
             <div style="position:relative;">
               {{ form.password }}
               <span onclick="togglePw('id_password','eye_pw')" id="eye_pw"
-                style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--gray-400);font-size:.85rem;user-select:none;">
-                Show
-              </span>
+                style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--gray-400);font-size:.85rem;user-select:none;">Show</span>
             </div>
             {% for e in form.password.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
           </div>
@@ -45,15 +44,15 @@
             <div style="position:relative;">
               {{ form.confirm_password }}
               <span onclick="togglePw('id_confirm_password','eye_cpw')" id="eye_cpw"
-                style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--gray-400);font-size:.85rem;user-select:none;">
-                Show
-              </span>
+                style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--gray-400);font-size:.85rem;user-select:none;">Show</span>
             </div>
             {% for e in form.confirm_password.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
           </div>
         </div>
 
         <hr style="border:none;border-top:1px solid var(--border);margin:20px 0;">
+
+        <!-- Personal Information -->
         <h3 style="font-size:0.875rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:16px;">Personal Information</h3>
 
         <div style="margin-bottom:1rem;">
@@ -85,6 +84,25 @@
             {% for e in form.gender.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
           </div>
           <div class="form-group">
+            <label class="form-label">Date of Birth</label>
+            {{ form.date_of_birth }}
+            {% for e in form.date_of_birth.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Age</label>
+            <input type="text" id="age-display" class="form-control" readonly placeholder="Auto-calculated from date of birth">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Civil Status</label>
+            {{ form.civil_status }}
+            {% for e in form.civil_status.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nationality</label>
+            {{ form.nationality }}
+            {% for e in form.nationality.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+          </div>
+          <div class="form-group">
             <label class="form-label">Contact Number</label>
             {{ form.contact_number }}
             <span class="form-error" id="phone-error-create" style="display:none;"></span>
@@ -98,6 +116,8 @@
         </div>
 
         <hr style="border:none;border-top:1px solid var(--border);margin:20px 0;">
+
+        <!-- Employment Details -->
         <h3 style="font-size:0.875rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:16px;">Employment Details</h3>
         <div class="grid-2">
           <div class="form-group">
@@ -141,50 +161,54 @@
 function togglePw(fieldId, eyeId) {
   var field = document.getElementById(fieldId);
   var eye   = document.getElementById(eyeId);
-  if (field.type === 'password') {
-    field.type = 'text';
-    eye.textContent = 'Hide';
-  } else {
-    field.type = 'password';
-    eye.textContent = 'Show';
-  }
+  if (field.type === 'password') { field.type = 'text'; eye.textContent = 'Hide'; }
+  else { field.type = 'password'; eye.textContent = 'Show'; }
+}
+
+// Auto-calculate age from date of birth
+function calculateAge(dob) {
+  var today = new Date();
+  var birth = new Date(dob);
+  var age = today.getFullYear() - birth.getFullYear();
+  var m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+
+var dobInput   = document.getElementById('id_date_of_birth');
+var ageDisplay = document.getElementById('age-display');
+if (dobInput && ageDisplay) {
+  dobInput.addEventListener('change', function() {
+    if (this.value) {
+      ageDisplay.value = calculateAge(this.value) + ' years old';
+    } else {
+      ageDisplay.value = '';
+    }
+  });
 }
 
 // Phone validation
 var phoneInput = document.getElementById('id_contact_number');
 var phoneError = document.getElementById('phone-error-create');
-
 if (phoneInput) {
-  // Block letters as you type — only allow digits and +
   phoneInput.addEventListener('input', function () {
     this.value = this.value.replace(/[^0-9+]/g, '');
-    // Limit length
-    if (this.value.startsWith('+63') && this.value.length > 13) {
-      this.value = this.value.slice(0, 13);
-    } else if (this.value.startsWith('0') && this.value.length > 11) {
-      this.value = this.value.slice(0, 11);
-    }
+    if (this.value.startsWith('+63') && this.value.length > 13) this.value = this.value.slice(0, 13);
+    else if (this.value.startsWith('0') && this.value.length > 11) this.value = this.value.slice(0, 11);
   });
-
-  // Validate format on blur
   phoneInput.addEventListener('blur', function () {
     var val = this.value.trim();
-    if (!val) {
-      this.style.borderColor = '';
-      phoneError.style.display = 'none';
-      return;
-    }
+    if (!val) { this.style.borderColor = ''; phoneError.style.display = 'none'; return; }
     var valid = /^(09\d{9}|(\+63)9\d{9})$/.test(val);
     if (!valid) {
       this.style.borderColor = '#EF4444';
-      phoneError.textContent = 'Enter a valid Philippine mobile number (e.g. 09171234567 or +639171234567).';
+      phoneError.textContent = 'Enter a valid Philippine mobile number (e.g. 09171234567).';
       phoneError.style.display = 'block';
     } else {
       this.style.borderColor = '#22C55E';
       phoneError.style.display = 'none';
     }
   });
-
   phoneInput.addEventListener('focus', function () {
     this.style.borderColor = '';
     phoneError.style.display = 'none';

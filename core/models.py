@@ -43,6 +43,14 @@ class Employee(models.Model):
         ('female', 'Female'),
     ]
 
+    CIVIL_STATUS_CHOICES = [
+        ('single', 'Single'),
+        ('married', 'Married'),
+        ('widowed', 'Widowed'),
+        ('separated', 'Separated'),
+        ('divorced', 'Divorced'),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='employee_profile')
     employee_id = models.CharField(max_length=20, unique=True)  # UNIQUE constraint
     first_name = models.CharField(max_length=100)
@@ -60,6 +68,9 @@ class Employee(models.Model):
     address = models.TextField(blank=True)
     photo = models.ImageField(upload_to='employee_photos/', blank=True, null=True)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, default='male')
+    date_of_birth = models.DateField(null=True, blank=True)
+    civil_status = models.CharField(max_length=20, choices=CIVIL_STATUS_CHOICES, default='single', blank=True)
+    nationality = models.CharField(max_length=100, default='Filipino', blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

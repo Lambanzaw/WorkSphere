@@ -72,7 +72,8 @@ class EmployeeCreateForm(forms.ModelForm):
         model = Employee
         fields = [
             'employee_id', 'first_name', 'last_name', 'email',
-            'department', 'position', 'gender', 'date_hired', 'basic_salary',
+            'department', 'position', 'gender', 'date_of_birth',
+            'civil_status', 'nationality', 'date_hired', 'basic_salary',
             'contact_number', 'address', 'photo', 'status'
         ]
         widgets = {
@@ -83,6 +84,9 @@ class EmployeeCreateForm(forms.ModelForm):
             'department':     forms.Select(attrs={'class': 'form-select'}),
             'position':       forms.TextInput(attrs={'class': 'form-control'}),
             'gender':         forms.Select(attrs={'class': 'form-select'}),
+            'date_of_birth':  forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'civil_status':   forms.Select(attrs={'class': 'form-select'}),
+            'nationality':    forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Filipino'}),
             'date_hired':     forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'basic_salary':   forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'contact_number': forms.TextInput(attrs={
@@ -147,7 +151,8 @@ class EmployeeEditForm(forms.ModelForm):
         model = Employee
         fields = [
             'first_name', 'last_name', 'email', 'department', 'position',
-            'gender', 'date_hired', 'basic_salary', 'contact_number',
+            'gender', 'date_of_birth', 'civil_status', 'nationality',
+            'date_hired', 'basic_salary', 'contact_number',
             'address', 'status', 'photo'
         ]
         widgets = {
@@ -157,6 +162,9 @@ class EmployeeEditForm(forms.ModelForm):
             'department':     forms.Select(attrs={'class': 'form-select'}),
             'position':       forms.TextInput(attrs={'class': 'form-control'}),
             'gender':         forms.Select(attrs={'class': 'form-select'}),
+            'date_of_birth':  forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'civil_status':   forms.Select(attrs={'class': 'form-select'}),
+            'nationality':    forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Filipino'}),
             'date_hired':     forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'basic_salary':   forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'contact_number': forms.TextInput(attrs={
