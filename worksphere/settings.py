@@ -83,22 +83,25 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'worksphere.wsgi.application'
 
-DATABASES = {
-    'default': dj_database_url.config(
-        default=os.getenv('DATABASE_URL'),
-        conn_max_age=600,
-        ssl_require=os.getenv('USE_SSL', 'True') == 'True'
-    )
-}
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-         'NAME':     os.getenv('DB_NAME', 'worksphere_db'),
-         'USER':     os.getenv('DB_USER', 'worksphere_user'),
-         'PASSWORD': os.getenv('DB_PASSWORD', 'worksphere123'),
-         'HOST':     os.getenv('DB_HOST', 'localhost'),
-         'PORT':     os.getenv('DB_PORT', '5432'),
+# ─── Database (Railway PostgreSQL) ───────────────
+DATABASE_URL = os.getenv('DATABASE_URL')
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=True
+        )
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME':     os.getenv('DB_NAME', 'worksphere_db'),
+            'USER':     os.getenv('DB_USER', 'worksphere_user'),
+            'PASSWORD': os.getenv('DB_PASSWORD', 'worksphere123'),
+            'HOST':     os.getenv('DB_HOST', 'localhost'),
+            'PORT':     os.getenv('DB_PORT', '5432'),
         }
     }
 
