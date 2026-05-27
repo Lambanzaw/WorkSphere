@@ -63,7 +63,10 @@ urlpatterns = [
 
     # ── Reports (Admin) ───────────────────────────────────────────────────────
     path('reports/', views_reports.reports_index, name='reports'),
-
+    path('reports/export/attendance/', views_reports.export_attendance_csv, name='export_attendance_csv'),
+    path('reports/export/directory/',  views_reports.export_directory_csv,  name='export_directory_csv'),
+    path('reports/export/payroll/',    views_reports.export_payroll_csv,    name='export_payroll_csv'),
+    
     # ── Sphere Assistant ──────────────────────────────────────────────────────
     path('sphere/', views_sphere.sphere_view, name='sphere'),
     path('sphere/chat/', views_sphere.sphere_chat, name='sphere_chat'),

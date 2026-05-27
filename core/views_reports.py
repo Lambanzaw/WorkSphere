@@ -4,9 +4,12 @@ from django.db.models import Count, Sum
 import datetime
 import json
 import pytz
+import csv
 
 from .models import Employee, Attendance, LeaveRequest, Payroll, Department, AuditLog
 from .decorators import admin_required
+from django.http import HttpResponse
+
 
 
 @admin_required
@@ -207,3 +210,114 @@ def reports_index(request):
         'all_departments':         Department.objects.all().order_by('name'),
     }
     return render(request, 'reports/index.html', context)
+
+@admin_required
+def export_attendance_csv(request):
+    month = int(request.GET.get('month', timezone.now().month))
+    year  = int(request.GET.get('year', timezone.now().year))
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="attendance_{month}_{year}.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Department', 'Employees', 'Present', 'Absent', 'Late', 'Attendance Rate'])
+
+    departments = Department.objects.all()
+    month_attendance = Attendance.objects.filter(date__month=month, date__year=year)
+
+    for dept in departments:
+        emps = Employee.objects.filter(department=dept)
+        if emps.count() == 0:
+            continue
+        emp_ids  = list(emps.values_list('id', flat=True))
+        dept_att = month_attendance.filter(employee_id__in=emp_ids)
+        if dept_att.count() == 0:
+            continue
+        p     = dept_att.filter(status__in=['present', 'late']).count()
+        a     = dept_att.filter(status='absent').count()
+        l     = dept_att.filter(status='late').count()
+        total = p + a
+        rate  = round(p / total * 100) if total > 0 else 100
+        writer.writerow([dept.name, emps.count(), p, a, l, f'{rate}%'])
+
+    return response
+
+
+@admin_required
+def export_directory_csv(request):
+    month      = request.GET.get('month', '')
+    year       = request.GET.get('year', '')
+    dir_search = request.GET.get('dir_search', '').strip()
+    dir_dept   = request.GET.get('dir_dept', '')
+    dir_status = request.GET.get('dir_status', '')
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="employee_directory.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Employee ID', 'Name', 'Department', 'Position', 'Gender', 'Date Hired', 'Email', 'Status'])
+
+    employees = Employee.objects.select_related('department').order_by('department__name', 'last_name')
+    if dir_search:
+        employees = employees.filter(first_name__icontains=dir_search) | \
+                    employees.filter(last_name__icontains=dir_search) | \
+                    employees.filter(employee_id__icontains=dir_search) | \
+                    employees.filter(position__icontains=dir_search)
+    if dir_dept:
+        employees = employees.filter(department_id=dir_dept)
+    if dir_status:
+        employees = employees.filter(status=dir_status)
+
+    for emp in employees:
+        writer.writerow([
+            emp.employee_id,
+            emp.get_full_name(),
+            emp.department.name if emp.department else '—',
+            emp.position,
+            emp.get_gender_display(),
+            emp.date_hired.strftime('%b %d, %Y') if emp.date_hired else '—',
+            emp.email,
+            emp.get_status_display(),
+        ])
+
+    return response
+
+
+@admin_required
+def export_payroll_csv(request):
+    month      = int(request.GET.get('month', timezone.now().month))
+    year       = int(request.GET.get('year', timezone.now().year))
+    pay_search = request.GET.get('pay_search', '').strip()
+    pay_dept   = request.GET.get('pay_dept', '')
+    pay_status = request.GET.get('pay_status', '')
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="payroll_{month}_{year}.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Employee', 'Department', 'Basic Salary', 'Deductions', 'Bonuses', 'Net Pay', 'Status'])
+
+    payrolls = Payroll.objects.filter(
+        month=month, year=year
+    ).select_related('employee', 'employee__department').order_by('employee__last_name')
+
+    if pay_search:
+        payrolls = payrolls.filter(employee__first_name__icontains=pay_search) | \
+                   payrolls.filter(employee__last_name__icontains=pay_search)
+    if pay_dept:
+        payrolls = payrolls.filter(employee__department_id=pay_dept)
+    if pay_status:
+        payrolls = payrolls.filter(status=pay_status)
+
+    for p in payrolls:
+        writer.writerow([
+            p.employee.get_full_name(),
+            p.employee.department.name if p.employee.department else '—',
+            p.basic_salary,
+            p.total_deductions,
+            p.bonuses,
+            p.net_salary,
+            p.status,
+        ])
+
+    return response

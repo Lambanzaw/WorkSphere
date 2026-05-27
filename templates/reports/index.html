@@ -70,7 +70,7 @@
     <div style="display:flex;justify-content:space-between;align-items:flex-start;">
       <div>
         <p style="font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:.4rem;">Total Payroll</p>
-        <div style="font-size:1.6rem;font-weight:800;color:#8B5CF6;line-height:1;">₱{{ stats.total_payroll|floatformat:2 }}</div>
+        <div style="font-size:1.6rem;font-weight:800;color:#8B5CF6;line-height:1;">&#8369;{{ stats.total_payroll|floatformat:2 }}</div>
         <p style="font-size:.8rem;color:var(--text-muted);margin-top:.3rem;">Net payout this month</p>
       </div>
       <div style="width:46px;height:46px;border-radius:12px;background:#EDE9FE;display:flex;align-items:center;justify-content:center;">
@@ -81,6 +81,19 @@
 </div>
 
 {% if report_type == 'attendance' %}
+<!-- Attendance Export Buttons -->
+<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:1rem;">
+  <a href="{% url 'export_attendance_csv' %}?month={{ selected_month }}&year={{ selected_year }}"
+     class="btn btn-outline btn-sm">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Export CSV
+  </a>
+  <button onclick="printAttendancePDF()" class="btn btn-primary btn-sm">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6,9 6,2 18,2 18,9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+    Print PDF
+  </button>
+</div>
+
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;">
   <div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden;">
     <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
@@ -243,10 +256,19 @@
       </select>
       <button type="submit" class="btn btn-primary btn-sm">Search</button>
       <a href="{% url 'reports' %}?report=directory&month={{ selected_month }}&year={{ selected_year }}" class="btn btn-outline btn-sm">Clear</a>
+      <a href="{% url 'export_directory_csv' %}?month={{ selected_month }}&year={{ selected_year }}&dir_search={{ dir_search }}&dir_dept={{ dir_dept }}&dir_status={{ dir_status }}"
+         class="btn btn-outline btn-sm">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export CSV
+      </a>
+      <button type="button" onclick="printDirectoryPDF()" class="btn btn-primary btn-sm">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6,9 6,2 18,2 18,9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Print PDF
+      </button>
     </form>
   </div>
   <div style="overflow-x:auto;">
-    <table style="width:100%;border-collapse:collapse;font-size:.875rem;">
+    <table id="directory-table" style="width:100%;border-collapse:collapse;font-size:.875rem;">
       <thead>
         <tr>
           <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;white-space:nowrap;">Employee ID</th>
@@ -308,10 +330,19 @@
       </select>
       <button type="submit" class="btn btn-primary btn-sm">Search</button>
       <a href="{% url 'reports' %}?report=payroll&month={{ selected_month }}&year={{ selected_year }}" class="btn btn-outline btn-sm">Clear</a>
+      <a href="{% url 'export_payroll_csv' %}?month={{ selected_month }}&year={{ selected_year }}&pay_search={{ pay_search }}&pay_dept={{ pay_dept }}&pay_status={{ pay_status }}"
+         class="btn btn-outline btn-sm">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export CSV
+      </a>
+      <button type="button" onclick="printPayrollPDF()" class="btn btn-primary btn-sm">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6,9 6,2 18,2 18,9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Print PDF
+      </button>
     </form>
   </div>
   <div style="overflow-x:auto;">
-    <table style="width:100%;border-collapse:collapse;font-size:.875rem;">
+    <table id="payroll-table" style="width:100%;border-collapse:collapse;font-size:.875rem;">
       <thead>
         <tr>
           <th style="padding:.75rem 1rem;text-align:left;font-size:.72rem;font-weight:600;text-transform:uppercase;color:#6B7280;border-bottom:1px solid #E5E7EB;white-space:nowrap;">Employee</th>
@@ -327,9 +358,9 @@
         <tr style="border-bottom:1px solid #F3F4F6;">
           <td style="padding:.875rem 1rem;font-weight:600;color:#111827;white-space:nowrap;">{{ p.employee.get_full_name }}</td>
           <td style="padding:.875rem 1rem;color:#374151;white-space:nowrap;">{{ p.employee.department.name|default:"—" }}</td>
-          <td style="padding:.875rem 1rem;text-align:right;color:#374151;white-space:nowrap;">₱{{ p.basic_salary|floatformat:2 }}</td>
-          <td style="padding:.875rem 1rem;text-align:right;color:#EF4444;white-space:nowrap;">₱{{ p.total_deductions|floatformat:2 }}</td>
-          <td style="padding:.875rem 1rem;text-align:right;font-weight:700;color:#4F46E5;white-space:nowrap;">₱{{ p.net_salary|floatformat:2 }}</td>
+          <td style="padding:.875rem 1rem;text-align:right;color:#374151;white-space:nowrap;">&#8369;{{ p.basic_salary|floatformat:2 }}</td>
+          <td style="padding:.875rem 1rem;text-align:right;color:#EF4444;white-space:nowrap;">&#8369;{{ p.total_deductions|floatformat:2 }}</td>
+          <td style="padding:.875rem 1rem;text-align:right;font-weight:700;color:#4F46E5;white-space:nowrap;">&#8369;{{ p.net_salary|floatformat:2 }}</td>
           <td style="padding:.875rem 1rem;white-space:nowrap;">
             {% if p.status == 'finalized' %}<span style="background:#D1FAE5;color:#065F46;font-size:.72rem;font-weight:600;padding:.2rem .65rem;border-radius:999px;">Finalized</span>
             {% elif p.status == 'paid' %}<span style="background:#DBEAFE;color:#1E40AF;font-size:.72rem;font-weight:600;padding:.2rem .65rem;border-radius:999px;">Paid</span>
@@ -345,13 +376,32 @@
 </div>
 {% endif %}
 
+<!-- Hidden PDF Print Area -->
+<div id="pdf-print-area" style="display:none;">
+  <div id="pdf-content"></div>
+</div>
+
+<style>
+@media print {
+  body * { visibility: hidden !important; }
+  #pdf-print-area, #pdf-print-area * { visibility: visible !important; }
+  #pdf-print-area {
+    position: fixed !important;
+    top: 0; left: 0;
+    width: 100%;
+    background: white;
+  }
+  @page { size: A4 landscape; margin: 1cm; }
+}
+</style>
+
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script>
 document.getElementById('report-select').addEventListener('change', function() {
-    this.closest('form').submit();
+  this.closest('form').submit();
 });
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -400,5 +450,172 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+
+// ── PDF Helper ─────────────────────────────────────────────
+function getPDFHeader(title, subtitle) {
+  var now = new Date().toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
+  return `
+    <div style="font-family:Arial,sans-serif;">
+      <div style="background:#1F2937;color:white;padding:20px 28px;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:1.3rem;font-weight:800;letter-spacing:.02em;">WorkSphere</div>
+          <div style="font-size:.8rem;opacity:.7;margin-top:2px;">Human Resource Management System</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:1rem;font-weight:700;">${title}</div>
+          <div style="font-size:.78rem;opacity:.8;margin-top:2px;">${subtitle}</div>
+        </div>
+      </div>
+      <div style="background:#F9FAFB;border-bottom:2px solid #E5E7EB;padding:8px 28px;display:flex;justify-content:space-between;font-size:.78rem;color:#6B7280;">
+        <span>Generated: ${now}</span>
+        <span>CONFIDENTIAL — For Internal Use Only</span>
+      </div>
+    </div>`;
+}
+
+function getPDFFooter() {
+  var now = new Date().toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
+  return `
+    <div style="font-family:Arial,sans-serif;margin-top:24px;padding:10px 28px;border-top:2px solid #1F2937;display:flex;justify-content:space-between;font-size:.72rem;color:#9CA3AF;">
+      <span>WorkSphere HRMS — Confidential</span>
+      <span>Printed: ${now}</span>
+    </div>`;
+}
+
+function buildPDFTable(headers, rows, colWidths) {
+  var thStyle = 'padding:8px 12px;text-align:left;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;';
+  var tdStyle = 'padding:8px 12px;font-size:.78rem;border-bottom:1px solid #F3F4F6;';
+  var thead = '<tr style="background:#1F2937;color:white;">' +
+    headers.map(function(h){ return '<th style="'+thStyle+'">'+h+'</th>'; }).join('') + '</tr>';
+  var tbody = rows.map(function(row, i){
+    var bg = i % 2 === 0 ? '#FFFFFF' : '#F9FAFB';
+    return '<tr style="background:'+bg+';">' +
+      row.map(function(cell){ return '<td style="'+tdStyle+'">'+cell+'</td>'; }).join('') +
+    '</tr>';
+  }).join('');
+  return '<table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;margin-top:0;">' +
+    '<thead>'+thead+'</thead><tbody>'+tbody+'</tbody></table>';
+}
+
+// ── Attendance PDF ─────────────────────────────────────────
+function printAttendancePDF() {
+  var deptData = {% if dept_stats %}{{ dept_stats|safe }}{% else %}[]{% endif %};
+  var month = '{{ selected_month_name }} {{ selected_year }}';
+  var totalEmp = '{{ stats.total_employees }}';
+  var avgRate  = '{{ stats.avg_attendance_rate }}';
+
+  var rows = [];
+  {% for d in dept_stats %}
+  rows.push(['{{ d.department }}','{{ d.employee_count }}',
+    '<span style="color:#16A34A;font-weight:700;">{{ d.present_count }}</span>',
+    '<span style="color:#DC2626;font-weight:700;">{{ d.absent_count }}</span>',
+    '<span style="color:#D97706;font-weight:700;">{{ d.late_count }}</span>',
+    '{{ d.attendance_rate }}%']);
+  {% endfor %}
+
+  var statsBox = `
+    <div style="display:flex;gap:16px;padding:16px 28px;background:#F9FAFB;border-bottom:1px solid #E5E7EB;font-family:Arial,sans-serif;">
+      <div style="background:white;border:1px solid #E5E7EB;border-radius:8px;padding:12px 20px;flex:1;text-align:center;">
+        <div style="font-size:.72rem;color:#6B7280;text-transform:uppercase;font-weight:600;">Total Employees</div>
+        <div style="font-size:1.6rem;font-weight:800;color:#1F2937;">{{ stats.total_employees }}</div>
+      </div>
+      <div style="background:white;border:1px solid #E5E7EB;border-radius:8px;padding:12px 20px;flex:1;text-align:center;">
+        <div style="font-size:.72rem;color:#6B7280;text-transform:uppercase;font-weight:600;">Avg Attendance</div>
+        <div style="font-size:1.6rem;font-weight:800;color:#16A34A;">{{ stats.avg_attendance_rate }}%</div>
+      </div>
+      <div style="background:white;border:1px solid #E5E7EB;border-radius:8px;padding:12px 20px;flex:1;text-align:center;">
+        <div style="font-size:.72rem;color:#6B7280;text-transform:uppercase;font-weight:600;">Leaves Taken</div>
+        <div style="font-size:1.6rem;font-weight:800;color:#D97706;">{{ stats.leaves_this_month }}</div>
+      </div>
+    </div>`;
+
+  var table = rows.length > 0
+    ? buildPDFTable(['Department','Employees','Present','Absent','Late','Rate'], rows)
+    : '<p style="padding:24px;text-align:center;color:#9CA3AF;font-family:Arial;">No attendance data for this period.</p>';
+
+  var content = getPDFHeader('Attendance Report', month) + statsBox +
+    '<div style="padding:16px 28px 0;font-family:Arial;font-size:.82rem;font-weight:700;color:#1F2937;">Department Attendance Summary</div>' +
+    '<div style="padding:0 16px;">' + table + '</div>' + getPDFFooter();
+
+  document.getElementById('pdf-content').innerHTML = content;
+  document.getElementById('pdf-print-area').style.display = 'block';
+  window.print();
+  document.getElementById('pdf-print-area').style.display = 'none';
+}
+
+// ── Directory PDF ──────────────────────────────────────────
+function printDirectoryPDF() {
+  var rows = [];
+  {% for emp in employee_directory %}
+  rows.push([
+    '{{ emp.employee_id }}',
+    '<strong>{{ emp.get_full_name }}</strong>',
+    '{{ emp.department.name|default:"—" }}',
+    '{{ emp.position }}',
+    '{{ emp.get_gender_display }}',
+    '{{ emp.date_hired|date:"M d, Y" }}',
+    '{{ emp.email }}',
+    '{% if emp.status == "active" %}<span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:999px;font-size:.7rem;font-weight:700;">Active</span>{% elif emp.status == "on_leave" %}<span style="background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:999px;font-size:.7rem;font-weight:700;">On Leave</span>{% else %}<span style="background:#F3F4F6;color:#6B7280;padding:2px 8px;border-radius:999px;font-size:.7rem;font-weight:700;">{{ emp.get_status_display }}</span>{% endif %}'
+  ]);
+  {% endfor %}
+
+  var subtitle = 'Total: {{ employee_directory.count }} employees';
+  {% if dir_search %}var subtitle = subtitle + ' | Search: {{ dir_search }}';{% endif %}
+  {% if dir_status %}var subtitle = subtitle + ' | Status: {{ dir_status|title }}';{% endif %}
+
+  var table = rows.length > 0
+    ? buildPDFTable(['ID','Name','Department','Position','Gender','Date Hired','Email','Status'], rows)
+    : '<p style="padding:24px;text-align:center;color:#9CA3AF;font-family:Arial;">No employees found.</p>';
+
+  var content = getPDFHeader('Employee Directory', subtitle) +
+    '<div style="padding:0 16px;">' + table + '</div>' + getPDFFooter();
+
+  document.getElementById('pdf-content').innerHTML = content;
+  document.getElementById('pdf-print-area').style.display = 'block';
+  window.print();
+  document.getElementById('pdf-print-area').style.display = 'none';
+}
+
+// ── Payroll PDF ────────────────────────────────────────────
+function printPayrollPDF() {
+  var rows = [];
+  var totalNet = 0;
+  {% for p in payroll_summary %}
+  var net = {{ p.net_salary|floatformat:2 }};
+  totalNet += net;
+  rows.push([
+    '<strong>{{ p.employee.get_full_name }}</strong>',
+    '{{ p.employee.department.name|default:"—" }}',
+    'PHP {{ p.basic_salary|floatformat:2 }}',
+    '<span style="color:#DC2626;">PHP {{ p.total_deductions|floatformat:2 }}</span>',
+    '<strong style="color:#4F46E5;">PHP {{ p.net_salary|floatformat:2 }}</strong>',
+    '{% if p.status == "finalized" %}<span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:999px;font-size:.7rem;font-weight:700;">Finalized</span>{% elif p.status == "paid" %}<span style="background:#DBEAFE;color:#1E40AF;padding:2px 8px;border-radius:999px;font-size:.7rem;font-weight:700;">Paid</span>{% else %}<span style="background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:999px;font-size:.7rem;font-weight:700;">Draft</span>{% endif %}'
+  ]);
+  {% endfor %}
+
+  var statsBox = `
+    <div style="display:flex;gap:16px;padding:16px 28px;background:#F9FAFB;border-bottom:1px solid #E5E7EB;font-family:Arial,sans-serif;">
+      <div style="background:white;border:1px solid #E5E7EB;border-radius:8px;padding:12px 20px;flex:1;text-align:center;">
+        <div style="font-size:.72rem;color:#6B7280;text-transform:uppercase;font-weight:600;">Total Records</div>
+        <div style="font-size:1.6rem;font-weight:800;color:#1F2937;">{{ payroll_summary.count }}</div>
+      </div>
+      <div style="background:white;border:1px solid #E5E7EB;border-radius:8px;padding:12px 20px;flex:1;text-align:center;">
+        <div style="font-size:.72rem;color:#6B7280;text-transform:uppercase;font-weight:600;">Total Net Payout</div>
+        <div style="font-size:1.3rem;font-weight:800;color:#7C3AED;">PHP {{ stats.total_payroll|floatformat:2 }}</div>
+      </div>
+    </div>`;
+
+  var table = rows.length > 0
+    ? buildPDFTable(['Employee','Department','Basic Salary','Deductions','Net Pay','Status'], rows)
+    : '<p style="padding:24px;text-align:center;color:#9CA3AF;font-family:Arial;">No payroll records for this period.</p>';
+
+  var content = getPDFHeader('Payroll Summary', '{{ selected_month_name }} {{ selected_year }}') +
+    statsBox + '<div style="padding:0 16px;">' + table + '</div>' + getPDFFooter();
+
+  document.getElementById('pdf-content').innerHTML = content;
+  document.getElementById('pdf-print-area').style.display = 'block';
+  window.print();
+  document.getElementById('pdf-print-area').style.display = 'none';
+}
 </script>
 {% endblock %}
