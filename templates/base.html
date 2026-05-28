@@ -495,13 +495,20 @@ async function swSend(text){
     var data=await res.json();
     document.getElementById('swTyping').classList.remove('show');
     if(data.response){
-  swAppend('sphere',data.response);
-  swSetStatus('Speaking...');
-  swSpeak(data.response,function(){ swSetStatus('Ready'); });
-  if(data.navigate_url){
-    setTimeout(function(){ window.location.href = data.navigate_url; }, 1500);
-  }
-}
+      swAppend('sphere', data.response);
+      swSetStatus('Speaking...');
+      swSpeak(data.response, function(){ swSetStatus('Ready'); });
+      if(data.fill_data){
+        setTimeout(function(){
+          sphereFillForm(data.fill_data);
+        }, data.navigate_url ? 1800 : 300);
+      }
+      if(data.navigate_url){
+        setTimeout(function(){
+          window.location.href = data.navigate_url;
+        }, data.fill_data ? 400 : 1500);
+      }
+    }
     else{ swAppend('sphere','Sorry, something went wrong.'); swSetStatus('Ready'); }
   }catch(e){ document.getElementById('swTyping').classList.remove('show'); swAppend('sphere','Connection error.'); swSetStatus('Ready'); }
 }
@@ -525,9 +532,96 @@ function swToggleMic(){
   swRecognition.onerror=function(){ swRecording=false; document.getElementById('swMic').classList.remove('recording'); swSetStatus('Ready'); };
   swRecognition.start();
 }
-document.addEventListener('DOMContentLoaded',function(){
-  var inp=document.getElementById('swInput');
-  if(inp) inp.addEventListener('keydown',function(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); swSend(); } });
+function sphereFillForm(fillData) {
+  if (!fillData || !fillData.form || !fillData.fields) return;
+  sessionStorage.setItem('sphere_fill', JSON.stringify(fillData));
+  sphereApplyFill(fillData.form, fillData.fields);
+}
+
+function sphereApplyFill(form, fields) {
+  var fieldMap = {
+    'leave_request': {
+      'leave_type':  function(v){ setSelectByText('id_leave_type', v); },
+      'start_date':  function(v){ setInputVal('id_start_date', v); },
+      'end_date':    function(v){ setInputVal('id_end_date', v); },
+      'reason':      function(v){ setInputVal('id_reason', v); },
+    },
+    'add_employee': {
+      'first_name':      function(v){ setInputVal('id_first_name', v); },
+      'last_name':       function(v){ setInputVal('id_last_name', v); },
+      'username':        function(v){ setInputVal('id_username', v); },
+      'email':           function(v){ setInputVal('id_email', v); },
+      'position':        function(v){ setInputVal('id_position', v); },
+      'department':      function(v){ setSelectByText('id_department', v); },
+      'basic_salary':    function(v){ setInputVal('id_basic_salary', v); },
+      'gender':          function(v){ setSelectByVal('id_gender', v.toLowerCase()); },
+      'date_hired':      function(v){ setInputVal('id_date_hired', v); },
+      'contact_number':  function(v){ setInputVal('id_contact_number', v); },
+    },
+    'generate_payroll': {
+      'month': function(v){ setSelectByVal('id_month', v); },
+      'year':  function(v){ setSelectByVal('id_year', v); },
+    },
+    'attendance_override': {
+      'time_in':  function(v){ setInputVal('id_time_in', v); },
+      'time_out': function(v){ setInputVal('id_time_out', v); },
+      'status':   function(v){ setSelectByVal('id_status', v.toLowerCase()); },
+    },
+  };
+  var formFields = fieldMap[form];
+  if (!formFields) return;
+  Object.keys(fields).forEach(function(key) {
+    if (formFields[key]) {
+      try { formFields[key](fields[key]); } catch(e) {}
+    }
+  });
+}
+
+function setInputVal(id, val) {
+  var el = document.getElementById(id);
+  if (el) {
+    el.value = val;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+}
+
+function setSelectByVal(id, val) {
+  var el = document.getElementById(id);
+  if (el) {
+    el.value = val;
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+}
+
+function setSelectByText(id, text) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  var lower = text.toLowerCase();
+  for (var i = 0; i < el.options.length; i++) {
+    if (el.options[i].text.toLowerCase().includes(lower)) {
+      el.selectedIndex = i;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      break;
+    }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var inp = document.getElementById('swInput');
+  if (inp) inp.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); swSend(); }
+  });
+  var stored = sessionStorage.getItem('sphere_fill');
+  if (stored) {
+    try {
+      var fillData = JSON.parse(stored);
+      sessionStorage.removeItem('sphere_fill');
+      setTimeout(function() {
+        sphereApplyFill(fillData.form, fillData.fields);
+      }, 600);
+    } catch(e) {}
+  }
 });
 </script>
 {% endif %}
