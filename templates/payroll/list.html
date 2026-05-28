@@ -1,19 +1,19 @@
 {% extends 'base.html' %}
 {% block title %}Payroll Records — WorkSphere{% endblock %}
+{% block page_title %}Payroll Records{% endblock %}
 
-{% block content %}
-
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;">
-  <div>
-    <h1 style="font-size:1.6rem;font-weight:800;color:var(--text-primary);margin-bottom:.25rem;">Payroll Records</h1>
-    <p style="color:var(--text-secondary);font-size:.9rem;">View, manage and finalize employee payroll</p>
-  </div>
-  <a href="{% url 'payroll_generate' %}" style="display:inline-flex;align-items:center;gap:.5rem;background:var(--primary);color:white;padding:.65rem 1.4rem;border-radius:10px;font-weight:600;font-size:.9rem;box-shadow:0 4px 12px rgba(79,70,229,0.3);text-decoration:none;transition:all .2s;"
-    onmouseenter="this.style.opacity='.85';"
-    onmouseleave="this.style.opacity='1';">
+{% block topbar_actions %}
+<div style="display:flex;gap:8px;margin-left:auto;">
+  <button onclick="openGenerateAllModal()" class="btn btn-outline btn-sm">
+    Generate All
+  </button>
+  <a href="{% url 'payroll_generate' %}" style="display:inline-flex;align-items:center;gap:.5rem;background:var(--primary);color:white;padding:.65rem 1.4rem;border-radius:10px;font-weight:600;font-size:.9rem;text-decoration:none;">
     + Generate Payroll
   </a>
 </div>
+{% endblock %}
+
+{% block content %}
 
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;margin-bottom:2rem;">
   <div style="background:white;border-radius:16px;padding:1.5rem;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);">
@@ -131,10 +131,7 @@
           </span>
         </div>
         <div style="font-size:.82rem;color:var(--text-secondary);display:flex;gap:.5rem 1rem;flex-wrap:wrap;align-items:center;">
-          <span style="display:inline-flex;align-items:center;gap:.3rem;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-            {{ p.employee.department.name|default:"—" }}
-          </span>
+          <span>{{ p.employee.department.name|default:"—" }}</span>
           <span>Basic: ₱{{ p.basic_salary|floatformat:2 }}</span>
           <span style="color:#EF4444;">Deductions: ₱{{ p.total_deductions|floatformat:2 }}</span>
           <span style="color:#22C55E;">Bonuses: ₱{{ p.bonuses|floatformat:2 }}</span>
@@ -147,8 +144,8 @@
       </div>
 
       <div style="text-align:center;flex-shrink:0;">
-        <div style="font-size:1.1rem;font-weight:700;color:var(--text-primary);">{{ p.days_present }}/{{ p.working_days }}</div>
-        <div style="font-size:.7rem;color:var(--text-muted);">days present</div>
+        <div style="font-size:1.1rem;font-weight:700;color:var(--text-primary);">{{ p.days_worked }}/{{ p.total_working_days|default:"—" }}</div>
+        <div style="font-size:.7rem;color:var(--text-muted);">days worked</div>
       </div>
 
       <div style="display:flex;gap:.5rem;flex-shrink:0;">
@@ -183,4 +180,57 @@
   {% endif %}
 
 </div>
+
+<!-- Generate All Modal -->
+<div id="generateAllModal" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,0.4);" onclick="closeGenerateAllModal()"></div>
+  <div style="position:relative;background:var(--surface,#fff);border-radius:12px;padding:28px 32px;width:100%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+      <h3 style="font-size:1rem;font-weight:700;margin:0;color:var(--text-primary,#111);">Generate All Payroll</h3>
+    </div>
+    <p style="font-size:.875rem;color:var(--text-secondary,#555);margin:12px 0 20px 0;line-height:1.5;">
+      This will generate payroll for <strong>all active employees</strong> for the selected month. Employees who already have a payroll record for that month will be skipped.
+    </p>
+    <form method="post" action="{% url 'payroll_generate_all' %}">
+      {% csrf_token %}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:var(--text-muted);display:block;margin-bottom:4px;">Month</label>
+          <select name="month" class="form-select">
+            {% for m in months %}
+            <option value="{{ m.0 }}" {% if m.0 == current_month %}selected{% endif %}>{{ m.1 }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label style="font-size:.8rem;font-weight:600;color:var(--text-muted);display:block;margin-bottom:4px;">Year</label>
+          <select name="year" class="form-select">
+            {% for y in years %}
+            <option value="{{ y }}" {% if y == current_year %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" onclick="closeGenerateAllModal()" class="btn btn-outline btn-sm">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm">Generate All</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openGenerateAllModal() {
+  document.getElementById('generateAllModal').style.display = 'flex';
+}
+function closeGenerateAllModal() {
+  document.getElementById('generateAllModal').style.display = 'none';
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeGenerateAllModal();
+});
+</script>
 {% endblock %}

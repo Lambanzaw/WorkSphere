@@ -40,7 +40,9 @@ urlpatterns = [
     # ── Attendance (Admin) ────────────────────────────────────────────────────
     path('attendance/', views_attendance.admin_attendance_list, name='admin_attendance_list'),
     path('attendance/override/', views_attendance.admin_attendance_override, name='admin_attendance_override'),
-    path('attendance/<int:pk>/override/', views_attendance.admin_attendance_override, name='admin_attendance_edit'),
+    path('attendance/<int:pk>/override/', views_attendance.admin_attendance_override, name='attendance_override'),
+    path('attendance/<int:pk>/approve-overtime/', views_attendance.approve_overtime, name='approve_overtime'),
+    path('attendance/<int:pk>/reject-overtime/',  views_attendance.reject_overtime,  name='reject_overtime'),
 
     # ── Leave (Employee) ──────────────────────────────────────────────────────
     path('leave/request/', views_leave.leave_create, name='leave_create'),
@@ -56,6 +58,7 @@ urlpatterns = [
     path('payroll/generate/', views_payroll.payroll_generate, name='payroll_generate'),
     path('payroll/<int:pk>/', views_payroll.payroll_detail, name='payroll_detail'),
     path('payroll/<int:pk>/finalize/', views_payroll.payroll_finalize, name='payroll_finalize'),
+    path('payroll/generate-all/', views_payroll.payroll_generate_all, name='payroll_generate_all'),
 
     # ── Payroll (Employee) ────────────────────────────────────────────────────
     path('my-payslips/', views_payroll.my_payslips, name='my_payslips'),
@@ -66,7 +69,7 @@ urlpatterns = [
     path('reports/export/attendance/', views_reports.export_attendance_csv, name='export_attendance_csv'),
     path('reports/export/directory/',  views_reports.export_directory_csv,  name='export_directory_csv'),
     path('reports/export/payroll/',    views_reports.export_payroll_csv,    name='export_payroll_csv'),
-    
+
     # ── Sphere Assistant ──────────────────────────────────────────────────────
     path('sphere/', views_sphere.sphere_view, name='sphere'),
     path('sphere/chat/', views_sphere.sphere_chat, name='sphere_chat'),

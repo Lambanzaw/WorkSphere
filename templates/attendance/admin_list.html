@@ -4,28 +4,23 @@
 
 {% block topbar_actions %}
 <div style="display:flex;gap:8px;align-items:center;margin-left:auto;flex-wrap:wrap;justify-content:flex-end;">
-  <form method="post" action="{% url 'run_auto_absent' %}" style="display:inline;">
-    {% csrf_token %}
-    <input type="hidden" name="days" value="30">
-    <button type="submit" class="btn btn-outline btn-sm"
-      onclick="return confirm('Auto-mark absent for all employees with no attendance in the past 30 weekdays?')">
-      Run Auto-Absent (30 days)
-    </button>
-  </form>
+  <button type="button" class="btn btn-outline btn-sm" onclick="openAutoAbsentModal()">
+    Run Auto-Absent (30 days)
+  </button>
   <a href="{% url 'admin_attendance_override' %}" class="btn btn-outline btn-sm">+ Manual Entry</a>
 </div>
 {% endblock %}
 
 {% block content %}
 
-<div class="card" style="margin-bottom: 16px;">
-  <div class="card-body" style="padding: 14px 20px;">
-    <form method="get" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-body" style="padding:14px 20px;">
+    <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
       <div>
         <label class="form-label">Date</label>
         <input type="date" name="date" value="{{ date_filter }}" class="form-control">
       </div>
-      <div style="min-width: 200px;">
+      <div style="min-width:200px;">
         <label class="form-label">Employee</label>
         <select name="employee" class="form-select">
           <option value="">All Employees</option>
@@ -54,16 +49,17 @@
           <th>Time Out</th>
           <th>Hours</th>
           <th>Status</th>
-          <th>Override</th>
-          <th></th>
+          <th>Overtime</th>
+          <th>OT Status</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for att in records %}
         <tr>
           <td>
-            <div style="font-weight: 600;">{{ att.employee.get_full_name }}</div>
-            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ att.employee.department }}</div>
+            <div style="font-weight:600;">{{ att.employee.get_full_name }}</div>
+            <div style="font-size:.75rem;color:var(--text-muted);">{{ att.employee.department }}</div>
           </td>
           <td>{{ att.date|date:"M d, Y" }}</td>
           <td>{{ att.time_in|time:"h:i A"|default:"—" }}</td>
@@ -76,17 +72,52 @@
             {% endif %}
           </td>
           <td>
-            {% if att.admin_override and att.notes != 'Auto-marked absent — no clock-in recorded.' %}
-            <span style="font-size: 0.72rem; color: var(--accent); font-weight: 600;">OVERRIDE</span>
+            {% if att.overtime_hours %}
+              {% if att.overtime_hours > 0 %}
+              <span class="badge badge-info">{{ att.overtime_hours|floatformat:2 }}h</span>
+              {% else %}
+              <span style="color:var(--text-faint);">—</span>
+              {% endif %}
+            {% else %}
+            <span style="color:var(--text-faint);">—</span>
             {% endif %}
           </td>
           <td>
-            <a href="{% url 'admin_attendance_edit' att.pk %}" class="btn btn-outline btn-sm">Edit</a>
+            {% if att.overtime_hours %}
+              {% if att.overtime_hours > 0 %}
+                {% if att.overtime_approved %}
+                <span class="badge badge-success">Approved</span>
+                {% else %}
+                <span class="badge badge-warning">Pending</span>
+                {% endif %}
+              {% else %}
+              <span style="color:var(--text-faint);">—</span>
+              {% endif %}
+            {% else %}
+            <span style="color:var(--text-faint);">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <a href="{% url 'attendance_override' att.pk %}" class="btn btn-outline btn-sm">Edit</a>
+              {% if att.overtime_hours > 0 and not att.overtime_approved %}
+              <button type="button" class="btn btn-success btn-sm"
+                onclick="openApproveModal('{% url 'approve_overtime' att.pk %}', '{{ att.employee.get_full_name }}', '{{ att.overtime_hours|floatformat:2 }}')">
+                Approve OT
+              </button>
+              {% endif %}
+              {% if att.overtime_hours > 0 and att.overtime_approved %}
+              <button type="button" class="btn btn-danger btn-sm"
+                onclick="openRejectModal('{% url 'reject_overtime' att.pk %}', '{{ att.employee.get_full_name }}')">
+                Reject OT
+              </button>
+              {% endif %}
+            </div>
           </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="8" class="text-center text-muted" style="padding: 40px;">
+          <td colspan="9" class="text-center text-muted" style="padding:40px;">
             No attendance records for this date.
           </td>
         </tr>
@@ -96,4 +127,109 @@
   </div>
 </div>
 
+<!-- ── Approve OT Modal ─────────────────────────────────────────────────── -->
+<div id="approveModal" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,0.4);" onclick="closeApproveModal()"></div>
+  <div style="position:relative;background:var(--surface,#fff);border-radius:12px;padding:28px 32px;width:100%;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+      <div style="width:36px;height:36px;border-radius:50%;background:#d1fae5;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h3 style="font-size:1rem;font-weight:700;margin:0;color:var(--text-primary,#111);">Approve Overtime</h3>
+    </div>
+    <p id="approveModalText" style="font-size:.875rem;color:var(--text-secondary,#555);margin:12px 0 24px 0;line-height:1.5;"></p>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button type="button" onclick="closeApproveModal()" class="btn btn-outline btn-sm">Cancel</button>
+      <form id="approveForm" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success btn-sm">Approve</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ── Reject OT Modal ──────────────────────────────────────────────────── -->
+<div id="rejectModal" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,0.4);" onclick="closeRejectModal()"></div>
+  <div style="position:relative;background:var(--surface,#fff);border-radius:12px;padding:28px 32px;width:100%;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+      <div style="width:36px;height:36px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </div>
+      <h3 style="font-size:1rem;font-weight:700;margin:0;color:var(--text-primary,#111);">Reject Overtime</h3>
+    </div>
+    <p id="rejectModalText" style="font-size:.875rem;color:var(--text-secondary,#555);margin:12px 0 24px 0;line-height:1.5;"></p>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button type="button" onclick="closeRejectModal()" class="btn btn-outline btn-sm">Cancel</button>
+      <form id="rejectForm" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ── Auto-Absent Modal ─────────────────────────────────────────────────── -->
+<div id="autoAbsentModal" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,0.4);" onclick="closeAutoAbsentModal()"></div>
+  <div style="position:relative;background:var(--surface,#fff);border-radius:12px;padding:28px 32px;width:100%;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+      <div style="width:36px;height:36px;border-radius:50%;background:#fef9c3;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ca8a04" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <h3 style="font-size:1rem;font-weight:700;margin:0;color:var(--text-primary,#111);">Run Auto-Absent</h3>
+    </div>
+    <p style="font-size:.875rem;color:var(--text-secondary,#555);margin:12px 0 24px 0;line-height:1.5;">
+      This will auto-mark absent for all employees with no attendance in the past <strong>30 weekdays</strong>. This action cannot be undone.
+    </p>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button type="button" onclick="closeAutoAbsentModal()" class="btn btn-outline btn-sm">Cancel</button>
+      <form method="post" action="{% url 'run_auto_absent' %}" style="display:inline;">
+        {% csrf_token %}
+        <input type="hidden" name="days" value="30">
+        <button type="submit" class="btn btn-primary btn-sm">Confirm</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openApproveModal(actionUrl, name, hours) {
+  document.getElementById('approveModalText').textContent =
+    'Approve ' + hours + 'h overtime for ' + name + '? This will mark their overtime as approved for payroll.';
+  document.getElementById('approveForm').action = actionUrl;
+  document.getElementById('approveModal').style.display = 'flex';
+}
+function closeApproveModal() {
+  document.getElementById('approveModal').style.display = 'none';
+}
+
+function openRejectModal(actionUrl, name) {
+  document.getElementById('rejectModalText').textContent =
+    'Reject overtime for ' + name + '? Their overtime hours will be cleared.';
+  document.getElementById('rejectForm').action = actionUrl;
+  document.getElementById('rejectModal').style.display = 'flex';
+}
+function closeRejectModal() {
+  document.getElementById('rejectModal').style.display = 'none';
+}
+
+function openAutoAbsentModal() {
+  document.getElementById('autoAbsentModal').style.display = 'flex';
+}
+function closeAutoAbsentModal() {
+  document.getElementById('autoAbsentModal').style.display = 'none';
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeApproveModal();
+    closeRejectModal();
+    closeAutoAbsentModal();
+  }
+});
+</script>
 {% endblock %}

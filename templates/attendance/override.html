@@ -2,140 +2,180 @@
 {% block title %}Override Attendance — WorkSphere{% endblock %}
 
 {% block content %}
-<div class="page-header">
-  <div>
-    <h1 class="page-title">Override Attendance</h1>
-    <p class="page-subtitle">
-      Modifying record for
-      <strong>{{ attendance.employee.get_full_name }}</strong>
-      on <strong>{{ attendance.date|date:"F d, Y" }}</strong>
-    </p>
-  </div>
-  <a href="{% url 'admin_attendance_list' %}" class="btn btn-secondary">
-    ← Back to Attendance List
-  </a>
-</div>
-
 <div style="max-width:680px;">
-  <div class="card">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Override Attendance</h1>
+      <p class="page-sub">
+        Modifying record for
+        <strong>{{ attendance.employee.get_full_name }}</strong>
+        on <strong>{{ attendance.date|date:"F d, Y" }}</strong>
+      </p>
+    </div>
+    <a href="{% url 'admin_attendance_list' %}" class="btn btn-outline btn-sm">← Back</a>
+  </div>
+
+  <!-- Current Record -->
+  <div class="card" style="margin-bottom:16px;">
     <div class="card-header">
-      <h2 class="card-title">Current Record</h2>
+      <span class="card-title">Current Record</span>
     </div>
     <div class="card-body">
-      <div class="info-grid" style="grid-template-columns:repeat(3,1fr);">
-        <div class="info-item">
-          <span class="info-label">Employee</span>
-          <span class="info-value">{{ attendance.employee.get_full_name }}</span>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:.875rem;">
+        <div>
+          <div style="color:var(--text-muted);font-size:.75rem;margin-bottom:2px;">Employee</div>
+          <div style="font-weight:600;">{{ attendance.employee.get_full_name }}</div>
         </div>
-        <div class="info-item">
-          <span class="info-label">Date</span>
-          <span class="info-value">{{ attendance.date|date:"F d, Y" }}</span>
+        <div>
+          <div style="color:var(--text-muted);font-size:.75rem;margin-bottom:2px;">Date</div>
+          <div style="font-weight:600;">{{ attendance.date|date:"F d, Y" }}</div>
         </div>
-        <div class="info-item">
-          <span class="info-label">Day</span>
-          <span class="info-value">{{ attendance.date|date:"l" }}</span>
+        <div>
+          <div style="color:var(--text-muted);font-size:.75rem;margin-bottom:2px;">Day</div>
+          <div style="font-weight:600;">{{ attendance.date|date:"l" }}</div>
         </div>
-        <div class="info-item">
-          <span class="info-label">Current Time In</span>
-          <span class="info-value">
-            {% if attendance.time_in %}
-              {{ attendance.time_in|time:"h:i A" }}
+        <div>
+          <div style="color:var(--text-muted);font-size:.75rem;margin-bottom:2px;">Time In</div>
+          <div style="font-weight:600;">{{ attendance.time_in|time:"h:i A"|default:"—" }}</div>
+        </div>
+        <div>
+          <div style="color:var(--text-muted);font-size:.75rem;margin-bottom:2px;">Time Out</div>
+          <div style="font-weight:600;">{{ attendance.time_out|time:"h:i A"|default:"—" }}</div>
+        </div>
+        <div>
+          <div style="color:var(--text-muted);font-size:.75rem;margin-bottom:2px;">Status</div>
+          <span class="badge badge-{{ attendance.status }}">{{ attendance.get_status_display }}</span>
+        </div>
+        <div>
+          <div style="color:var(--text-muted);font-size:.75rem;margin-bottom:2px;">Overtime Hours</div>
+          <div style="font-weight:600;">
+            {% if attendance.overtime_hours > 0 %}
+              {{ attendance.overtime_hours|floatformat:2 }}h
+              {% if attendance.overtime_approved %}
+                <span class="badge badge-success" style="margin-left:4px;">Approved</span>
+              {% else %}
+                <span class="badge badge-warning" style="margin-left:4px;">Pending</span>
+              {% endif %}
             {% else %}
-              <span style="color:var(--gray-400);">—</span>
+              —
             {% endif %}
-          </span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Current Time Out</span>
-          <span class="info-value">
-            {% if attendance.time_out %}
-              {{ attendance.time_out|time:"h:i A" }}
-            {% else %}
-              <span style="color:var(--gray-400);">—</span>
-            {% endif %}
-          </span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Status</span>
-          <span class="info-value">
-            {% if attendance.is_late %}
-              <span class="badge badge-warning">Late</span>
-            {% else %}
-              <span class="badge badge-success">On Time</span>
-            {% endif %}
-          </span>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="card" style="margin-top:1.5rem;">
+  <!-- Override Form -->
+  <div class="card">
     <div class="card-header">
-      <h2 class="card-title">Override Details</h2>
+      <span class="card-title">Override Details</span>
     </div>
     <div class="card-body">
-      <div class="alert alert-warning" style="margin-bottom:1.5rem;">
-        <strong>⚠ Admin Action:</strong> All attendance overrides are recorded in the audit log with your name and reason. This action cannot be undone.
+      <div class="alert alert-warning" style="margin-bottom:16px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>All attendance overrides are recorded in the audit log. This action cannot be undone.</span>
       </div>
 
       <form method="post">
         {% csrf_token %}
 
         {% if form.non_field_errors %}
-          <div class="alert alert-danger">
-            {% for error in form.non_field_errors %}
-              <p style="margin:0;">{{ error }}</p>
-            {% endfor %}
-          </div>
+        <div class="alert alert-error" style="margin-bottom:16px;">
+          {% for error in form.non_field_errors %}<p style="margin:0;">{{ error }}</p>{% endfor %}
+        </div>
         {% endif %}
 
-        <div class="form-row" style="grid-template-columns:1fr 1fr;">
+        <!-- Time In / Time Out -->
+        <div class="grid-2" style="margin-bottom:14px;">
           <div class="form-group">
-            <label class="form-label" for="{{ form.time_in.id_for_label }}">
-              New Time In
-            </label>
+            <label class="form-label">Time In</label>
             {{ form.time_in }}
-            {% if form.time_in.errors %}
-              <p class="form-error">{{ form.time_in.errors|join:", " }}</p>
-            {% endif %}
+            {% for e in form.time_in.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
           </div>
-
           <div class="form-group">
-            <label class="form-label" for="{{ form.time_out.id_for_label }}">
-              New Time Out
-            </label>
+            <label class="form-label">Time Out</label>
             {{ form.time_out }}
-            {% if form.time_out.errors %}
-              <p class="form-error">{{ form.time_out.errors|join:", " }}</p>
-            {% endif %}
-            <p class="form-help">Leave blank if employee has not yet clocked out.</p>
+            {% for e in form.time_out.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+            <span style="font-size:.75rem;color:var(--text-muted);">Leave blank if not yet clocked out.</span>
           </div>
         </div>
 
+        <!-- Status -->
         <div class="form-group">
-          <label class="form-label" for="{{ form.override_reason.id_for_label }}">
-            Override Reason <span style="color:var(--danger);">*</span>
-          </label>
-          {{ form.override_reason }}
-          {% if form.override_reason.errors %}
-            <p class="form-error">{{ form.override_reason.errors|join:", " }}</p>
-          {% endif %}
-          <p class="form-help">
-            Required. Explain why this attendance record is being modified.
-            This is saved to the audit log.
-          </p>
+          <label class="form-label">Status</label>
+          {{ form.status }}
+          {% for e in form.status.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
         </div>
 
-        <div style="display:flex;gap:1rem;margin-top:1.5rem;">
-          <button type="submit" class="btn btn-primary">
-            Save Override
-          </button>
-          <a href="{% url 'admin_attendance_list' %}" class="btn btn-secondary">
-            Cancel
-          </a>
+        <!-- Overtime -->
+        <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
+        <h3 style="font-size:.875rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:12px;">Overtime</h3>
+
+        <div class="grid-2" style="margin-bottom:14px;">
+          <div class="form-group">
+            <label class="form-label">Overtime Hours <span style="font-size:.75rem;color:var(--text-muted);">(max 2 hours)</span></label>
+            {{ form.overtime_hours }}
+            {% for e in form.overtime_hours.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+            <span style="font-size:.75rem;color:var(--text-muted);">Enter hours worked after 5:00 PM. Max 2.0 hours.</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Approve Overtime</label>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+              {{ form.overtime_approved }}
+              <span style="font-size:.875rem;color:var(--text-secondary);">Check to approve overtime pay</span>
+            </div>
+            {% for e in form.overtime_approved.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+          </div>
+        </div>
+
+        <!-- Override Reason -->
+        <div class="form-group">
+          <label class="form-label">Override Reason <span style="color:var(--danger);">*</span></label>
+          {{ form.override_reason }}
+          {% for e in form.override_reason.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+          <span style="font-size:.75rem;color:var(--text-muted);">Required. This is saved to the audit log.</span>
+        </div>
+
+        <!-- Notes -->
+        <div class="form-group">
+          <label class="form-label">Notes</label>
+          {{ form.notes }}
+          {% for e in form.notes.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+          <button type="submit" class="btn btn-primary">Save Override</button>
+          <a href="{% url 'admin_attendance_list' %}" class="btn btn-outline">Cancel</a>
         </div>
       </form>
     </div>
   </div>
 </div>
+
+{% block extra_js %}
+<script>
+// Auto-calculate overtime when time out is set
+var timeOutInput = document.getElementById('id_time_out');
+var otInput = document.getElementById('id_overtime_hours');
+
+if (timeOutInput && otInput) {
+  timeOutInput.addEventListener('change', function() {
+    var timeOut = this.value;
+    if (!timeOut) return;
+    var parts = timeOut.split(':');
+    var hours = parseInt(parts[0]);
+    var mins  = parseInt(parts[1]);
+    var totalMins = hours * 60 + mins;
+    var standardEnd = 17 * 60; // 5:00 PM = 1020 mins
+    if (totalMins > standardEnd) {
+      var otMins = totalMins - standardEnd;
+      var otHours = Math.min(otMins / 60, 2.0); // cap at 2 hours
+      otInput.value = otHours.toFixed(2);
+    } else {
+      otInput.value = '0';
+    }
+  });
+}
+</script>
+{% endblock %}
 {% endblock %}

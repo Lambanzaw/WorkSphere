@@ -10,30 +10,140 @@
 {% endif %}
 {% endblock %}
 
+{% block extra_css %}
+<style>
+  .sw-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    display: block;
+  }
+
+  .att-tbl {
+    width: 100%;
+    min-width: 640px;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  .att-tbl thead tr {
+    border-top: 1px solid var(--border, #e5e7eb);
+    border-bottom: 1px solid var(--border, #e5e7eb);
+  }
+
+  .att-tbl thead th {
+    padding: 9px 14px;
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--text-muted);
+    background: var(--surface, #fff);
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .att-tbl tbody td {
+    padding: 11px 14px;
+    font-size: .825rem;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border, #e5e7eb);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+  }
+
+  .att-tbl tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .att-tbl tbody tr:hover {
+    background: var(--surface-hover, #f9fafb);
+  }
+
+  /* Column widths */
+  .att-tbl th:nth-child(1), .att-tbl td:nth-child(1) { width: 14%; }
+  .att-tbl th:nth-child(2), .att-tbl td:nth-child(2) { width: 7%;  }
+  .att-tbl th:nth-child(3), .att-tbl td:nth-child(3) { width: 11%; }
+  .att-tbl th:nth-child(4), .att-tbl td:nth-child(4) { width: 11%; }
+  .att-tbl th:nth-child(5), .att-tbl td:nth-child(5) { width: 9%;  }
+  .att-tbl th:nth-child(6), .att-tbl td:nth-child(6) { width: 16%; }
+  .att-tbl th:nth-child(7), .att-tbl td:nth-child(7) { width: 12%; }
+  .att-tbl th:nth-child(8), .att-tbl td:nth-child(8) { width: 12%; }
+
+  .sw-hint {
+    display: none;
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-faint);
+    padding: 3px 0 1px;
+    margin: 0;
+  }
+  @media (max-width: 768px) {
+    .sw-hint { display: block; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+  }
+  @media (max-width: 480px) {
+    .stats-grid { grid-template-columns: 1fr 1fr !important; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
+
 <!-- Stats -->
-<div class="stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 20px;">
+<div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;">
   <div class="stat-card">
-    <div class="stat-card-header"><span class="stat-card-label">Days Present</span><div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg></div></div>
+    <div class="stat-card-header">
+      <span class="stat-card-label">Days Present</span>
+      <div class="stat-icon green">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg>
+      </div>
+    </div>
     <div class="stat-value">{{ total_present }}</div>
+    <div class="stat-sub">This month</div>
   </div>
   <div class="stat-card">
-    <div class="stat-card-header"><span class="stat-card-label">Days Late</span><div class="stat-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg></div></div>
+    <div class="stat-card-header">
+      <span class="stat-card-label">Days Late</span>
+      <div class="stat-icon amber">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+      </div>
+    </div>
     <div class="stat-value">{{ total_late }}</div>
+    <div class="stat-sub">This month</div>
   </div>
   <div class="stat-card">
-    <div class="stat-card-header"><span class="stat-card-label">Days Absent</span><div class="stat-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div></div>
+    <div class="stat-card-header">
+      <span class="stat-card-label">Days Absent</span>
+      <div class="stat-icon red">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      </div>
+    </div>
     <div class="stat-value">{{ total_absent }}</div>
+    <div class="stat-sub">This month</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-header">
+      <span class="stat-card-label">Overtime</span>
+      <div class="stat-icon indigo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/><line x1="18" y1="2" x2="22" y2="6"/></svg>
+      </div>
+    </div>
+    <div class="stat-value" style="font-size:1.4rem;">{{ total_overtime_hours|default:"0.0" }}h</div>
+    <div class="stat-sub">Approved OT this month</div>
   </div>
 </div>
 
 <!-- Filter -->
-<div class="card" style="margin-bottom: 16px;">
-  <div class="card-body" style="padding: 14px 20px;">
-    <form method="get" style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-body" style="padding:14px 20px;">
+    <form method="get" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
       <div>
         <label class="form-label">Month</label>
-        <select name="month" class="form-select" style="min-width: 130px;">
+        <select name="month" class="form-select" style="min-width:130px;">
           {% for m_num, m_name in months %}
           <option value="{{ m_num }}" {% if m_num == month %}selected{% endif %}>{{ m_name }}</option>
           {% endfor %}
@@ -52,28 +162,81 @@
   </div>
 </div>
 
-<div class="card">
-  <div class="table-wrapper">
-    <table class="ws-table">
-      <thead><tr><th>Date</th><th>Day</th><th>Time In</th><th>Time Out</th><th>Hours</th><th>Status</th></tr></thead>
+<!-- Table -->
+<div class="card" style="overflow:hidden;">
+  <div class="card-header">
+    <span class="card-title">Attendance Records</span>
+  </div>
+  <p class="sw-hint" id="att-hint">← Swipe to see more →</p>
+  <div class="sw-wrap" id="att-wrap">
+    <table class="att-tbl">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Day</th>
+          <th>Time In</th>
+          <th>Time Out</th>
+          <th>Hours</th>
+          <th>Status</th>
+          <th>Overtime</th>
+          <th>OT Status</th>
+        </tr>
+      </thead>
       <tbody>
         {% for att in attendance_records %}
         <tr>
           <td>{{ att.date|date:"M d, Y" }}</td>
-          <td style="color: var(--text-muted);">{{ att.date|date:"D" }}</td>
+          <td style="color:var(--text-muted);">{{ att.date|date:"D" }}</td>
           <td>{{ att.time_in|time:"h:i A"|default:"—" }}</td>
           <td>{{ att.time_out|time:"h:i A"|default:"—" }}</td>
           <td>{{ att.get_hours_worked|floatformat:1 }}h</td>
           <td>
             <span class="badge badge-{{ att.status }}">{{ att.get_status_display }}</span>
-            {% if att.is_late %}<span style="font-size: 0.7rem; color: var(--accent); margin-left: 6px;">+{{ att.get_late_minutes }}min late</span>{% endif %}
+            {% if att.is_late %}
+            <span style="font-size:.7rem;color:var(--warning);display:block;margin-top:2px;">+{{ att.get_late_minutes }}min late</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if att.overtime_hours > 0 %}
+            <span style="font-weight:600;color:var(--primary);">{{ att.overtime_hours|floatformat:2 }}h</span>
+            {% else %}
+            <span style="color:var(--text-faint);">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if att.overtime_hours > 0 %}
+              {% if att.overtime_approved %}
+              <span class="badge badge-success">✓ Approved</span>
+              {% else %}
+              <span class="badge badge-warning">Pending</span>
+              {% endif %}
+            {% else %}
+            <span style="color:var(--text-faint);">—</span>
+            {% endif %}
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="6" class="text-center text-muted" style="padding: 40px;">No attendance records for this period.</td></tr>
+        <tr>
+          <td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted);font-size:.875rem;">
+            No attendance records for this period.
+          </td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var wrap = document.getElementById('att-wrap');
+var hint = document.getElementById('att-hint');
+if (wrap && hint) {
+  wrap.addEventListener('scroll', function() {
+    hint.style.opacity = '0';
+  }, { once: true });
+}
+</script>
 {% endblock %}

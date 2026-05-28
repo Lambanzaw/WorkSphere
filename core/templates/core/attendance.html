@@ -67,6 +67,7 @@
       <th>Time Out</th>
       <th>Late (mins)</th>
       <th>Status</th>
+      <th>Actions</th>
     </tr>
   </thead>
   <tbody>
@@ -83,9 +84,12 @@
         {% elif r.status == 'absent' %}<span class="badge badge-red">Absent</span>
         {% else %}<span class="badge badge-blue">{{ r.get_status_display }}</span>{% endif %}
       </td>
+      <td>
+        <a href="{% url 'attendance_override' r.pk %}" class="btn btn-sm">Edit</a>
+      </td>
     </tr>
     {% empty %}
-    <tr class="empty-row"><td colspan="6">No attendance records for this date.</td></tr>
+    <tr class="empty-row"><td colspan="7">No attendance records for this date.</td></tr>
     {% endfor %}
   </tbody>
 </table>

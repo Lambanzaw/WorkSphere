@@ -353,52 +353,6 @@
 {% block extra_js %}{% endblock %}
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  if (window.innerWidth > 768) return;
-
-  document.querySelectorAll('.table-wrapper').forEach(function(wrapper) {
-    var table = wrapper.querySelector('table');
-    if (!table) return;
-
-    // Create left button
-    var btnLeft = document.createElement('button');
-    btnLeft.innerHTML = '&#8592;';
-    btnLeft.style.cssText = 'position:absolute;left:0;top:50%;transform:translateY(-50%);z-index:10;background:var(--primary);color:white;border:none;border-radius:50%;width:30px;height:30px;font-size:14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;';
-
-    // Create right button
-    var btnRight = document.createElement('button');
-    btnRight.innerHTML = '&#8594;';
-    btnRight.style.cssText = 'position:absolute;right:0;top:50%;transform:translateY(-50%);z-index:10;background:var(--primary);color:white;border:none;border-radius:50%;width:30px;height:30px;font-size:14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;';
-
-    // Wrap in container
-    var container = document.createElement('div');
-    container.style.cssText = 'position:relative;';
-    wrapper.parentNode.insertBefore(container, wrapper);
-    container.appendChild(wrapper);
-    container.appendChild(btnLeft);
-    container.appendChild(btnRight);
-
-    // Scroll amount per click
-    var scrollStep = 150;
-
-    btnLeft.addEventListener('click', function() {
-      wrapper.scrollBy({ left: -scrollStep, behavior: 'smooth' });
-    });
-
-    btnRight.addEventListener('click', function() {
-      wrapper.scrollBy({ left: scrollStep, behavior: 'smooth' });
-    });
-
-    // Hide/show buttons based on scroll position
-    function updateButtons() {
-      btnLeft.style.opacity = wrapper.scrollLeft > 0 ? '1' : '0.3';
-      btnRight.style.opacity = wrapper.scrollLeft < (wrapper.scrollWidth - wrapper.clientWidth - 5) ? '1' : '0.3';
-    }
-
-    wrapper.addEventListener('scroll', updateButtons);
-    updateButtons();
-  });
-});
 </script>
 
 <!-- Sphere Floating Widget -->

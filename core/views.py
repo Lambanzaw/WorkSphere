@@ -4,6 +4,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Q
+from .forms import AttendanceAdminForm
+
 import datetime
 
 from .models import Employee, Department, Attendance, CompanySettings
@@ -302,3 +304,23 @@ def settings_view(request):
 
     context = {'settings': obj, 'departments': departments}
     return render(request, 'core/settings.html', context)
+
+@login_required
+def attendance_override(request, pk):
+    attendance = get_object_or_404(Attendance, pk=pk)
+    
+    if request.method == 'POST':
+        form = AttendanceAdminForm(request.POST, instance=attendance)
+        if form.is_valid():
+            record = form.save(commit=False)
+            record.admin_override = True
+            record.save()
+            messages.success(request, 'Attendance record updated successfully.')
+            return redirect('admin_attendance_list')
+    else:
+        form = AttendanceAdminForm(instance=attendance)
+    
+    return render(request, 'core/attendance_override.html', {
+        'attendance': attendance,
+        'form': form,
+    })

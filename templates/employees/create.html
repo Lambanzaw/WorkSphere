@@ -2,105 +2,158 @@
 {% block title %}Add Employee{% endblock %}
 {% block page_title %}Add New Employee{% endblock %}
 
+{% block extra_css %}
+<style>
+  .create-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .create-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    .create-grid { grid-template-columns: 1fr !important; }
+    .grid-2 { grid-template-columns: 1fr !important; }
+    .grid-2 [style*="grid-column:span 2"] { grid-column: span 1 !important; }
+    .card-body { padding: 12px !important; }
+    .card-header { padding: 10px 12px !important; }
+    .create-actions {
+      flex-direction: column;
+    }
+    .create-actions a,
+    .create-actions button {
+      width: 100%;
+      text-align: center;
+    }
+  }
+  .create-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 4px;
+    padding: 16px 0 8px 0;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="max-width: 800px;">
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">Employee Information</span>
-      <a href="{% url 'employee_list' %}" class="btn btn-outline btn-sm">← Back</a>
-    </div>
-    <div class="card-body">
-      <form method="post" enctype="multipart/form-data" novalidate>
-        {% csrf_token %}
+<form method="post" enctype="multipart/form-data" novalidate>
+  {% csrf_token %}
 
-        {% if form.non_field_errors %}
-        <div class="alert alert-error">{% for e in form.non_field_errors %}<span>{{ e }}</span>{% endfor %}</div>
-        {% endif %}
+  {% if form.non_field_errors %}
+  <div class="alert alert-error" style="margin-bottom:16px;">
+    {% for e in form.non_field_errors %}<span>{{ e }}</span>{% endfor %}
+  </div>
+  {% endif %}
 
-        <!-- Account Credentials -->
-        <h3 style="font-size:0.875rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:16px;">Account Credentials</h3>
-        <div class="grid-2">
-          <div class="form-group">
-            <label class="form-label">Username *</label>
-            {{ form.username }}
-            {% for e in form.username.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
-          </div>
-          <div class="form-group">
-            <label class="form-label">Employee ID *</label>
-            {{ form.employee_id }}
-            {% for e in form.employee_id.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
-          </div>
-          <div class="form-group">
-            <label class="form-label">Password *</label>
-            <div style="position:relative;">
-              {{ form.password }}
-              <span onclick="togglePw('id_password','eye_pw')" id="eye_pw"
-                style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--gray-400);font-size:.85rem;user-select:none;">Show</span>
+  <div class="create-grid">
+
+    <!-- LEFT COLUMN -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+      <!-- Account Credentials -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Account Credentials</span>
+          <a href="{% url 'employee_list' %}" class="btn btn-outline btn-sm">← Back</a>
+        </div>
+        <div class="card-body">
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Username *</label>
+              {{ form.username }}
+              {% for e in form.username.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
             </div>
-            {% for e in form.password.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
-          </div>
-          <div class="form-group">
-            <label class="form-label">Confirm Password *</label>
-            <div style="position:relative;">
-              {{ form.confirm_password }}
-              <span onclick="togglePw('id_confirm_password','eye_cpw')" id="eye_cpw"
-                style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--gray-400);font-size:.85rem;user-select:none;">Show</span>
+            <div class="form-group">
+              <label class="form-label">Employee ID *</label>
+              {{ form.employee_id }}
+              {% for e in form.employee_id.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
             </div>
-            {% for e in form.confirm_password.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+            <div class="form-group">
+              <label class="form-label">Password *</label>
+              <div style="position:relative;">
+                {{ form.password }}
+                <span onclick="togglePw('id_password','eye_pw')" id="eye_pw"
+                  style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--gray-400);font-size:.85rem;user-select:none;">Show</span>
+              </div>
+              {% for e in form.password.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+            </div>
+            <div class="form-group">
+              <label class="form-label">Confirm Password *</label>
+              <div style="position:relative;">
+                {{ form.confirm_password }}
+                <span onclick="togglePw('id_confirm_password','eye_cpw')" id="eye_cpw"
+                  style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--gray-400);font-size:.85rem;user-select:none;">Show</span>
+              </div>
+              {% for e in form.confirm_password.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+            </div>
           </div>
         </div>
+      </div>
 
-        <hr style="border:none;border-top:1px solid var(--border);margin:20px 0;">
-
-        <!-- Personal Information -->
-        <h3 style="font-size:0.875rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:16px;">Personal Information</h3>
-
-        <div style="margin-bottom:1rem;">
-          <label class="form-label">Employee Photo</label>
+      <!-- Photo -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">Employee Photo</span></div>
+        <div class="card-body">
           {{ form.photo }}
           <p style="font-size:.75rem;color:var(--text-muted);margin-top:.25rem;">Accepted formats: JPG, PNG. Max 2MB.</p>
           {% for e in form.photo.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
         </div>
+      </div>
 
-        <div class="grid-2">
-          <div class="form-group">
-            <label class="form-label">First Name *</label>
-            {{ form.first_name }}
-            {% for e in form.first_name.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+      <!-- Personal Information -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">Personal Information</span></div>
+        <div class="card-body">
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">First Name *</label>
+              {{ form.first_name }}
+              {% for e in form.first_name.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+            </div>
+            <div class="form-group">
+              <label class="form-label">Last Name *</label>
+              {{ form.last_name }}
+              {% for e in form.last_name.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+            </div>
+            <div class="form-group">
+              <label class="form-label">Gender / Sex *</label>
+              {{ form.gender }}
+              {% for e in form.gender.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+            </div>
+            <div class="form-group">
+              <label class="form-label">Date of Birth</label>
+              {{ form.date_of_birth }}
+              {% for e in form.date_of_birth.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+            </div>
+            <div class="form-group">
+              <label class="form-label">Age</label>
+              <input type="text" id="age-display" class="form-control" readonly placeholder="Auto-calculated">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Civil Status</label>
+              {{ form.civil_status }}
+              {% for e in form.civil_status.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+            </div>
+            <div class="form-group" style="grid-column:span 2;">
+              <label class="form-label">Nationality</label>
+              {{ form.nationality }}
+              {% for e in form.nationality.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Last Name *</label>
-            {{ form.last_name }}
-            {% for e in form.last_name.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
-          </div>
+        </div>
+      </div>
+
+      <!-- Contact Information -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">Contact Information</span></div>
+        <div class="card-body">
           <div class="form-group">
             <label class="form-label">Email *</label>
             {{ form.email }}
             {% for e in form.email.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
-          </div>
-          <div class="form-group">
-            <label class="form-label">Gender / Sex *</label>
-            {{ form.gender }}
-            {% for e in form.gender.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
-          </div>
-          <div class="form-group">
-            <label class="form-label">Date of Birth</label>
-            {{ form.date_of_birth }}
-            {% for e in form.date_of_birth.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
-          </div>
-          <div class="form-group">
-            <label class="form-label">Age</label>
-            <input type="text" id="age-display" class="form-control" readonly placeholder="Auto-calculated from date of birth">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Civil Status</label>
-            {{ form.civil_status }}
-            {% for e in form.civil_status.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
-          </div>
-          <div class="form-group">
-            <label class="form-label">Nationality</label>
-            {{ form.nationality }}
-            {% for e in form.nationality.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
           </div>
           <div class="form-group">
             <label class="form-label">Contact Number</label>
@@ -108,18 +161,23 @@
             <span class="form-error" id="phone-error-create" style="display:none;"></span>
             {% for e in form.contact_number.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
           </div>
+          <div class="form-group">
+            <label class="form-label">Address</label>
+            {{ form.address }}
+            {% for e in form.address.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+          </div>
         </div>
+      </div>
 
-        <div class="form-group">
-          <label class="form-label">Address</label>
-          {{ form.address }}
-        </div>
+    </div>
 
-        <hr style="border:none;border-top:1px solid var(--border);margin:20px 0;">
+    <!-- RIGHT COLUMN -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
 
-        <!-- Employment Details -->
-        <h3 style="font-size:0.875rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:16px;">Employment Details</h3>
-        <div class="grid-2">
+      <!-- Employment Details -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">Employment Details</span></div>
+        <div class="card-body">
           <div class="form-group">
             <label class="form-label">Department *</label>
             {{ form.department }}
@@ -143,17 +201,35 @@
           <div class="form-group">
             <label class="form-label">Status</label>
             {{ form.status }}
+            {% for e in form.status.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
           </div>
         </div>
+      </div>
 
-        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
-          <a href="{% url 'employee_list' %}" class="btn btn-outline">Cancel</a>
-          <button type="submit" class="btn btn-primary">Create Employee</button>
+      <!-- Guidelines -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">Guidelines</span></div>
+        <div class="card-body">
+          <ul style="font-size:.825rem;color:var(--text-secondary);line-height:1.8;padding-left:16px;margin:0;">
+            <li>Employee ID must be unique across all employees.</li>
+            <li>Username will be used for login — cannot be changed later.</li>
+            <li>Password must be at least 8 characters.</li>
+            <li>Contact number must be a valid Philippine mobile number.</li>
+            <li>Leave balances will be auto-allocated upon creation.</li>
+            <li>Inactive employees cannot log in to the system.</li>
+          </ul>
         </div>
-      </form>
+      </div>
+
+      <!-- Actions -->
+      <div class="create-actions">
+        <a href="{% url 'employee_list' %}" class="btn btn-outline">Cancel</a>
+        <button type="submit" class="btn btn-primary">Create Employee</button>
+      </div>
+
     </div>
   </div>
-</div>
+</form>
 {% endblock %}
 
 {% block extra_js %}
@@ -165,7 +241,6 @@ function togglePw(fieldId, eyeId) {
   else { field.type = 'password'; eye.textContent = 'Show'; }
 }
 
-// Auto-calculate age from date of birth
 function calculateAge(dob) {
   var today = new Date();
   var birth = new Date(dob);
@@ -179,15 +254,10 @@ var dobInput   = document.getElementById('id_date_of_birth');
 var ageDisplay = document.getElementById('age-display');
 if (dobInput && ageDisplay) {
   dobInput.addEventListener('change', function() {
-    if (this.value) {
-      ageDisplay.value = calculateAge(this.value) + ' years old';
-    } else {
-      ageDisplay.value = '';
-    }
+    ageDisplay.value = this.value ? calculateAge(this.value) + ' years old' : '';
   });
 }
 
-// Phone validation
 var phoneInput = document.getElementById('id_contact_number');
 var phoneError = document.getElementById('phone-error-create');
 if (phoneInput) {

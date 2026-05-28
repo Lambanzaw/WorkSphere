@@ -109,7 +109,7 @@ def _compute_payroll(employee, month, year):
     late_deduction    = hourly_rate * (total_late_minutes / 60)
     overtime_pay      = hourly_rate * 1.25 * total_overtime_hours
 
-    sss       = _compute_sss(basic_salary)
+    sss        = _compute_sss(basic_salary)
     philhealth = round(basic_salary * 0.025, 2)
     pagibig    = round(min(basic_salary * 0.02, 100), 2)
 
@@ -216,11 +216,99 @@ def payroll_generate(request):
 
 
 @admin_required
+def payroll_generate_all(request):
+    if request.method == 'POST':
+        month = int(request.POST.get('month', timezone.now().month))
+        year  = int(request.POST.get('year', timezone.now().year))
+
+        employees  = Employee.objects.filter(status='active')
+        generated  = 0
+        skipped    = 0
+
+        with transaction.atomic():
+            for employee in employees:
+                if Payroll.objects.filter(employee=employee, month=month, year=year).exists():
+                    skipped += 1
+                    continue
+
+                computed = _compute_payroll(employee, month, year)
+
+                sss        = computed['sss_contribution']
+                philhealth = computed['philhealth_contribution']
+                pagibig    = computed['pagibig_contribution']
+                tax        = 0
+                bonuses    = 0
+                other_deductions = 0
+
+                total_deductions = (
+                    computed['absence_deduction'] +
+                    computed['late_deduction']    +
+                    sss + philhealth + pagibig + tax +
+                    other_deductions
+                )
+                gross_salary = computed['basic_salary'] + computed['overtime_pay'] + bonuses
+                net_salary   = max(0, gross_salary - total_deductions)
+
+                payroll = Payroll.objects.create(
+                    employee                = employee,
+                    month                   = month,
+                    year                    = year,
+                    basic_salary            = computed['basic_salary'],
+                    days_worked             = computed['days_worked'],
+                    days_absent             = computed['days_absent'],
+                    late_minutes            = computed['late_minutes'],
+                    overtime_hours          = computed['overtime_hours'],
+                    absence_deduction       = computed['absence_deduction'],
+                    late_deduction          = computed['late_deduction'],
+                    sss_contribution        = sss,
+                    philhealth_contribution = philhealth,
+                    pagibig_contribution    = pagibig,
+                    withholding_tax         = tax,
+                    other_deductions        = other_deductions,
+                    total_deductions        = total_deductions,
+                    overtime_pay            = computed['overtime_pay'],
+                    bonuses                 = bonuses,
+                    gross_salary            = gross_salary,
+                    net_salary              = net_salary,
+                    status                  = 'draft',
+                    generated_by            = request.user,
+                )
+
+                AuditLog.objects.create(
+                    user        = request.user,
+                    action      = 'generate_payroll',
+                    model_name  = 'Payroll',
+                    object_id   = payroll.id,
+                    description = (
+                        f"Bulk generated payroll for {employee.get_full_name()} — "
+                        f"{datetime.date(year, month, 1).strftime('%B %Y')}. "
+                        f"Net: ₱{net_salary:,.2f}"
+                    ),
+                    ip_address  = get_client_ip(request),
+                )
+                generated += 1
+
+        messages.success(
+            request,
+            f"Bulk payroll complete for {datetime.date(year, month, 1).strftime('%B %Y')}. "
+            f"{generated} generated, {skipped} already existed and were skipped."
+        )
+        return redirect(f'/payroll/?month={month}&year={year}')
+
+    return redirect('payroll_list')
+
+
+@admin_required
 def payroll_list(request):
-    today      = timezone.now().date()
-    month      = int(request.GET.get('month', today.month))
-    year       = int(request.GET.get('year', today.year))
-    emp_filter = request.GET.get('employee', '')
+    today         = timezone.now().date()
+    month         = int(request.GET.get('month', today.month))
+    year          = int(request.GET.get('year', today.year))
+    emp_filter    = request.GET.get('employee', '')
+    search_query  = request.GET.get('q', '')
+    status_filter = request.GET.get('status', '')
+    selected_month  = request.GET.get('month', str(today.month))
+    selected_year   = request.GET.get('year', str(today.year))
+    selected_status = request.GET.get('status', '')
 
     payrolls = Payroll.objects.select_related(
         'employee', 'employee__department'
@@ -228,19 +316,40 @@ def payroll_list(request):
 
     if emp_filter:
         payrolls = payrolls.filter(employee_id=emp_filter)
+    if search_query:
+        payrolls = payrolls.filter(
+            employee__first_name__icontains=search_query
+        ) | payrolls.filter(
+            employee__last_name__icontains=search_query
+        )
+    if status_filter:
+        payrolls = payrolls.filter(status=status_filter)
 
-    total_net = sum(p.net_salary for p in payrolls)
-    employees = Employee.objects.filter(status='active').order_by('last_name')
+    all_payrolls    = Payroll.objects.all()
+    month_total     = sum(p.net_salary for p in payrolls)
+    total_count     = all_payrolls.count()
+    draft_count     = payrolls.filter(status='draft').count()
+    finalized_count = payrolls.filter(status='finalized').count()
+    employees       = Employee.objects.filter(status='active').order_by('last_name')
 
     context = {
-        'payrolls':   payrolls,
-        'month':      month,
-        'year':       year,
-        'total_net':  total_net,
-        'emp_filter': emp_filter,
-        'employees':  employees,
-        'months':     [(i, datetime.date(2000, i, 1).strftime('%B')) for i in range(1, 13)],
-        'years':      range(today.year - 2, today.year + 1),
+        'payrolls':        payrolls,
+        'month':           month,
+        'year':            year,
+        'current_month':   month,
+        'current_year':    year,
+        'month_total':     month_total,
+        'total_count':     total_count,
+        'draft_count':     draft_count,
+        'finalized_count': finalized_count,
+        'emp_filter':      emp_filter,
+        'search_query':    search_query,
+        'selected_month':  selected_month,
+        'selected_year':   selected_year,
+        'selected_status': selected_status,
+        'employees':       employees,
+        'months':          [(i, datetime.date(2000, i, 1).strftime('%B')) for i in range(1, 13)],
+        'years':           range(today.year - 2, today.year + 1),
     }
     return render(request, 'payroll/list.html', context)
 

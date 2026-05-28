@@ -90,6 +90,9 @@ def clock_in(request):
                 standard_start = datetime.time(8, 0, 0)
                 cutoff_time    = datetime.time(17, 0, 0)
 
+                # If employee clocks in early, record time_in as 8:00 AM
+                recorded_time_in = max(now_time, standard_start)
+
                 if now_time >= cutoff_time:
                     status = 'absent'
                 elif now_time > standard_start:
@@ -100,7 +103,7 @@ def clock_in(request):
                 Attendance.objects.create(
                     employee=employee,
                     date=today,
-                    time_in=now_time,
+                    time_in=recorded_time_in,
                     status=status,
                 )
 
@@ -118,7 +121,8 @@ def clock_in(request):
                 else:
                     messages.success(
                         request,
-                        f"Clocked in at {now_time.strftime('%I:%M %p')}. Have a productive day!"
+                        f"Clocked in at {now_time.strftime('%I:%M %p')}. "
+                        f"Work starts at 8:00 AM. Have a productive day!"
                     )
                 return redirect('my_attendance')
     else:
@@ -202,23 +206,28 @@ def my_attendance(request):
         date__year=year,
     ).order_by('-date')
 
-    total_present = attendance_records.filter(status__in=['present', 'late', 'overtime']).count()
-    total_late    = attendance_records.filter(status='late').count()
-    total_absent  = attendance_records.filter(status='absent').count()
+    total_present        = attendance_records.filter(status__in=['present', 'late', 'overtime']).count()
+    total_late           = attendance_records.filter(status='late').count()
+    total_absent         = attendance_records.filter(status='absent').count()
+    total_overtime_hours = sum(
+        float(a.overtime_hours) for a in attendance_records
+        if a.overtime_approved and a.overtime_hours > 0
+    )
 
     today_attendance = Attendance.objects.filter(employee=employee, date=today).first()
 
     context = {
-        'attendance_records': attendance_records,
-        'today':              today,
-        'today_attendance':   today_attendance,
-        'month':              month,
-        'year':               year,
-        'total_present':      total_present,
-        'total_late':         total_late,
-        'total_absent':       total_absent,
-        'months':             [(i, datetime.date(2000, i, 1).strftime('%B')) for i in range(1, 13)],
-        'years':              range(today.year - 2, today.year + 1),
+        'attendance_records':  attendance_records,
+        'today':               today,
+        'today_attendance':    today_attendance,
+        'month':               month,
+        'year':                year,
+        'total_present':       total_present,
+        'total_late':          total_late,
+        'total_absent':        total_absent,
+        'total_overtime_hours': round(total_overtime_hours, 2),
+        'months':              [(i, datetime.date(2000, i, 1).strftime('%B')) for i in range(1, 13)],
+        'years':               range(today.year - 2, today.year + 1),
     }
     return render(request, 'attendance/my_attendance.html', context)
 
@@ -283,17 +292,43 @@ def admin_attendance_override(request, pk=None):
             with transaction.atomic():
                 att = form.save(commit=False)
                 att.admin_override = True
+
+                # Explicitly get overtime from POST data
+                try:
+                    ot_hours = float(request.POST.get('overtime_hours', 0) or 0)
+                    ot_hours = min(max(ot_hours, 0), 2.0)  # clamp 0 to 2
+                except:
+                    ot_hours = 0
+
+                ot_approved = request.POST.get('overtime_approved') == 'on'
+
+                att.overtime_hours    = ot_hours
+                att.overtime_approved = ot_approved
                 att.save()
+
                 AuditLog.objects.create(
                     user        = request.user,
                     action      = 'override',
                     model_name  = 'Attendance',
                     object_id   = att.id,
-                    description = f"Admin overrode attendance for {att.employee.get_full_name()} on {att.date}. Reason: {att.override_reason}",
+                    description = (
+                        f"Admin overrode attendance for {att.employee.get_full_name()} "
+                        f"on {att.date}. Reason: {att.override_reason}. "
+                        f"OT: {att.overtime_hours}h (Approved: {att.overtime_approved})"
+                    ),
                     ip_address  = get_client_ip(request),
                 )
-                messages.success(request, f"Attendance record updated for {att.employee.get_full_name()}.")
+                messages.success(
+                    request,
+                    f"Attendance updated for {att.employee.get_full_name()}."
+                    + (f" OT: {ot_hours}h {'approved' if ot_approved else 'pending'}." if ot_hours > 0 else "")
+                )
                 return redirect('admin_attendance_list')
+        else:
+            # Show form errors for debugging
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
     else:
         form = AttendanceAdminForm(instance=attendance)
 
@@ -373,3 +408,45 @@ def my_schedule(request):
         'today_attendance': att_dict.get(today),
     }
     return render(request, 'attendance/my_schedule.html', context)
+
+@admin_required
+def approve_overtime(request, pk):
+    if request.method == 'POST':
+        att = get_object_or_404(Attendance, pk=pk)
+        att.overtime_approved = True
+        att.save()
+        AuditLog.objects.create(
+            user=request.user,
+            action='update',
+            model_name='Attendance',
+            object_id=att.id,
+            description=f"Approved {att.overtime_hours}h overtime for {att.employee.get_full_name()} on {att.date}",
+            ip_address=get_client_ip(request),
+        )
+        messages.success(
+            request,
+            f"Overtime approved for {att.employee.get_full_name()} — {att.overtime_hours}h on {att.date}."
+        )
+    return redirect('admin_attendance_list')
+
+
+@admin_required
+def reject_overtime(request, pk):
+    if request.method == 'POST':
+        att = get_object_or_404(Attendance, pk=pk)
+        att.overtime_approved = False
+        att.overtime_hours = 0
+        att.save()
+        AuditLog.objects.create(
+            user=request.user,
+            action='update',
+            model_name='Attendance',
+            object_id=att.id,
+            description=f"Rejected overtime for {att.employee.get_full_name()} on {att.date}",
+            ip_address=get_client_ip(request),
+        )
+        messages.success(
+            request,
+            f"Overtime rejected for {att.employee.get_full_name()} on {att.date}."
+        )
+    return redirect('admin_attendance_list')

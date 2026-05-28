@@ -1,218 +1,295 @@
 {% extends 'base.html' %}
 {% block title %}Payslip — {{ payroll.employee.get_full_name }} — WorkSphere{% endblock %}
 
+{% block extra_css %}
+<style>
+  .payslip-wrap {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 16px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .payslip-wrap { grid-template-columns: 1fr; }
+  }
+
+  .earnings-deductions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  @media (max-width: 600px) {
+    .earnings-deductions { grid-template-columns: 1fr; }
+  }
+
+  .att-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+    text-align: center;
+  }
+  @media (max-width: 600px) {
+    .att-summary-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  @media print {
+    .sidebar, .topbar, .page-header .btn, nav { display: none !important; }
+    .payslip-wrap { grid-template-columns: 1fr !important; }
+    #payslip-printable { max-width: 100%; }
+    .card { box-shadow: none !important; border: 1px solid #ddd; }
+    .print-hide { display: none !important; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="page-header">
+
+<!-- Page Header -->
+<div class="page-header" style="margin-bottom:16px;">
   <div>
     <h1 class="page-title">Payslip</h1>
-    <p class="page-subtitle">
-      {{ payroll.get_month_name }} —
-      {{ payroll.employee.get_full_name }}
-    </p>
+    <p class="page-sub">{{ payroll.get_month_name }} — {{ payroll.employee.get_full_name }}</p>
   </div>
-  <div style="display:flex;gap:.75rem;">
-    <button onclick="window.print()" class="btn btn-secondary">Print</button>
+  <div style="display:flex;gap:.75rem;" class="print-hide">
+    <button onclick="window.print()" class="btn btn-outline btn-sm">Print</button>
     {% if request.user.is_staff %}
-      <a href="{% url 'payroll_list' %}" class="btn btn-secondary">← Payroll List</a>
+      <a href="{% url 'payroll_list' %}" class="btn btn-outline btn-sm">← Payroll List</a>
     {% else %}
-      <a href="{% url 'my_payslips' %}" class="btn btn-secondary">← My Payslips</a>
+      <a href="{% url 'my_payslips' %}" class="btn btn-outline btn-sm">← My Payslips</a>
     {% endif %}
   </div>
 </div>
 
-<div id="payslip-printable" style="max-width:800px;">
-  <div class="card">
+<div class="payslip-wrap">
 
-    <div style="background:var(--primary);color:white;padding:2rem;border-radius:16px 16px 0 0;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-        <div>
-          <h2 style="font-size:1.75rem;font-weight:800;margin:0;font-family:var(--font-heading);">
-            WorkSphere
-          </h2>
-          <p style="opacity:.8;margin:.25rem 0 0;font-size:.9rem;">
-            Smart Workforce Management Made Simple
-          </p>
-        </div>
-        <div style="text-align:right;">
-          <div style="font-size:1.1rem;font-weight:700;">PAYSLIP</div>
-          <div style="opacity:.8;font-size:.9rem;margin-top:.25rem;">
-            {{ payroll.get_month_name }}
-          </div>
-          <div style="margin-top:.5rem;">
-            {% if payroll.status == 'finalized' %}
-              <span style="background:rgba(255,255,255,.2);padding:.25rem .75rem;border-radius:999px;font-size:.8rem;">
-                Finalized
-              </span>
-            {% else %}
-              <span style="background:rgba(255,200,0,.3);padding:.25rem .75rem;border-radius:999px;font-size:.8rem;">
-                Draft
-              </span>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-    </div>
+  <!-- LEFT — Main Payslip -->
+  <div id="payslip-printable">
+    <div class="card">
 
-    <div class="card-body">
-
-      <div style="background:var(--gray-50);border-radius:10px;padding:1.25rem;margin-bottom:1.5rem;">
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;">
+      <!-- Header Banner -->
+      <div style="background:var(--primary);color:white;padding:1.75rem 2rem;border-radius:12px 12px 0 0;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
           <div>
-            <div style="font-size:.8rem;color:var(--gray-500);margin-bottom:.25rem;">Employee Name</div>
-            <div style="font-weight:600;">{{ payroll.employee.get_full_name }}</div>
+            <h2 style="font-size:1.6rem;font-weight:800;margin:0;">WorkSphere</h2>
+            <p style="opacity:.8;margin:.2rem 0 0;font-size:.875rem;">Smart Workforce Management Made Simple</p>
           </div>
-          <div>
-            <div style="font-size:.8rem;color:var(--gray-500);margin-bottom:.25rem;">Employee ID</div>
-            <div style="font-weight:600;">{{ payroll.employee.employee_id }}</div>
-          </div>
-          <div>
-            <div style="font-size:.8rem;color:var(--gray-500);margin-bottom:.25rem;">Department</div>
-            <div style="font-weight:600;">{{ payroll.employee.department.name|default:"—" }}</div>
-          </div>
-          <div>
-            <div style="font-size:.8rem;color:var(--gray-500);margin-bottom:.25rem;">Position</div>
-            <div style="font-weight:600;">{{ payroll.employee.position }}</div>
-          </div>
-          <div>
-            <div style="font-size:.8rem;color:var(--gray-500);margin-bottom:.25rem;">Pay Period</div>
-            <div style="font-weight:600;">{{ payroll.get_month_name }}</div>
-          </div>
-          <div>
-            <div style="font-size:.8rem;color:var(--gray-500);margin-bottom:.25rem;">Date Generated</div>
-            <div style="font-weight:600;">{{ payroll.generated_on|date:"F d, Y" }}</div>
-          </div>
-        </div>
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;">
-
-        <div>
-          <h3 style="font-size:.9rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--success);margin-bottom:.75rem;">
-            Earnings
-          </h3>
-          <div style="display:flex;flex-direction:column;gap:.5rem;font-size:.9rem;">
-            <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--gray-100);">
-              <span style="color:var(--gray-600);">Basic Salary</span>
-              <span style="font-weight:500;">₱{{ payroll.basic_salary|floatformat:2 }}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--gray-100);">
-              <span style="color:var(--gray-600);">Overtime Pay</span>
-              <span style="font-weight:500;">₱{{ payroll.overtime_pay|floatformat:2 }}</span>
-            </div>
-            {% if payroll.bonuses > 0 %}
-            <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--gray-100);">
-              <span style="color:var(--gray-600);">Bonuses</span>
-              <span style="font-weight:500;">₱{{ payroll.bonuses|floatformat:2 }}</span>
-            </div>
-            {% endif %}
-            <div style="display:flex;justify-content:space-between;padding:.5rem 0;font-weight:700;color:var(--success);">
-              <span>Gross Pay</span>
-              <span>₱{{ payroll.gross_salary|floatformat:2 }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h3 style="font-size:.9rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--danger);margin-bottom:.75rem;">
-            Deductions
-          </h3>
-          <div style="display:flex;flex-direction:column;gap:.5rem;font-size:.9rem;">
-            <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--gray-100);">
-              <span style="color:var(--gray-600);">Absence Deduction</span>
-              <span style="font-weight:500;color:var(--danger);">₱{{ payroll.absence_deduction|floatformat:2 }}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--gray-100);">
-              <span style="color:var(--gray-600);">Late Deduction</span>
-              <span style="font-weight:500;color:var(--danger);">₱{{ payroll.late_deduction|floatformat:2 }}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--gray-100);">
-              <span style="color:var(--gray-600);">SSS Contribution</span>
-              <span style="font-weight:500;color:var(--danger);">₱{{ payroll.sss_contribution|floatformat:2 }}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--gray-100);">
-              <span style="color:var(--gray-600);">PhilHealth Contribution</span>
-              <span style="font-weight:500;color:var(--danger);">₱{{ payroll.philhealth_contribution|floatformat:2 }}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--gray-100);">
-              <span style="color:var(--gray-600);">Pag-IBIG Contribution</span>
-              <span style="font-weight:500;color:var(--danger);">₱{{ payroll.pagibig_contribution|floatformat:2 }}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--gray-100);">
-              <span style="color:var(--gray-600);">Withholding Tax</span>
-              <span style="font-weight:500;color:var(--danger);">₱{{ payroll.withholding_tax|floatformat:2 }}</span>
-            </div>
-            {% if payroll.other_deductions > 0 %}
-            <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--gray-100);">
-              <span style="color:var(--gray-600);">Other Deductions</span>
-              <span style="font-weight:500;color:var(--danger);">₱{{ payroll.other_deductions|floatformat:2 }}</span>
-            </div>
-            {% endif %}
-            <div style="display:flex;justify-content:space-between;padding:.5rem 0;font-weight:700;color:var(--danger);">
-              <span>Total Deductions</span>
-              <span>₱{{ payroll.total_deductions|floatformat:2 }}</span>
+          <div style="text-align:right;">
+            <div style="font-size:1rem;font-weight:700;letter-spacing:.08em;">PAYSLIP</div>
+            <div style="opacity:.8;font-size:.875rem;margin-top:.2rem;">{{ payroll.get_month_name }}</div>
+            <div style="margin-top:.5rem;">
+              {% if payroll.status == 'finalized' %}
+                <span style="background:rgba(255,255,255,.2);padding:.2rem .7rem;border-radius:999px;font-size:.75rem;">Finalized</span>
+              {% else %}
+                <span style="background:rgba(255,200,0,.3);padding:.2rem .7rem;border-radius:999px;font-size:.75rem;">Draft</span>
+              {% endif %}
             </div>
           </div>
         </div>
       </div>
 
-      <div style="background:var(--gray-50);border-radius:10px;padding:1.25rem;margin-bottom:1.5rem;">
-        <h3 style="font-size:.9rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gray-700);margin-bottom:.75rem;">
-          Attendance Summary
-        </h3>
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;text-align:center;">
-          <div>
-            <div style="font-size:1.5rem;font-weight:700;color:var(--primary);">{{ payroll.days_worked }}</div>
-            <div style="font-size:.75rem;color:var(--gray-500);">Days Worked</div>
-          </div>
-          <div>
-            <div style="font-size:1.5rem;font-weight:700;color:var(--danger);">{{ payroll.days_absent }}</div>
-            <div style="font-size:.75rem;color:var(--gray-500);">Absent</div>
-          </div>
-          <div>
-            <div style="font-size:1.5rem;font-weight:700;color:var(--warning);">{{ payroll.late_minutes }}</div>
-            <div style="font-size:.75rem;color:var(--gray-500);">Late (mins)</div>
-          </div>
-          <div>
-            <div style="font-size:1.5rem;font-weight:700;color:var(--success);">{{ payroll.overtime_hours|floatformat:1 }}</div>
-            <div style="font-size:.75rem;color:var(--gray-500);">OT Hours</div>
-          </div>
-          <div>
-            <div style="font-size:1.5rem;font-weight:700;color:var(--primary);">{{ payroll.year }}</div>
-            <div style="font-size:.75rem;color:var(--gray-500);">Year</div>
-          </div>
-        </div>
-      </div>
+      <div class="card-body">
 
-      <div style="background:var(--primary);color:white;border-radius:12px;padding:1.5rem;display:flex;justify-content:space-between;align-items:center;">
-        <div>
-          <div style="font-size:.9rem;opacity:.8;">NET PAY FOR {{ payroll.get_month_name|upper }}</div>
-          <div style="font-size:2.25rem;font-weight:800;font-family:var(--font-heading);">
-            ₱{{ payroll.net_salary|floatformat:2 }}
+        <!-- Employee Info -->
+        <div style="background:var(--bg,#f9fafb);border-radius:10px;padding:1.25rem;margin-bottom:1.5rem;">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;">
+            <div>
+              <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:.2rem;">Employee Name</div>
+              <div style="font-weight:600;font-size:.875rem;">{{ payroll.employee.get_full_name }}</div>
+            </div>
+            <div>
+              <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:.2rem;">Employee ID</div>
+              <div style="font-weight:600;font-size:.875rem;">{{ payroll.employee.employee_id }}</div>
+            </div>
+            <div>
+              <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:.2rem;">Department</div>
+              <div style="font-weight:600;font-size:.875rem;">{{ payroll.employee.department.name|default:"—" }}</div>
+            </div>
+            <div>
+              <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:.2rem;">Position</div>
+              <div style="font-weight:600;font-size:.875rem;">{{ payroll.employee.position }}</div>
+            </div>
+            <div>
+              <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:.2rem;">Pay Period</div>
+              <div style="font-weight:600;font-size:.875rem;">{{ payroll.get_month_name }}</div>
+            </div>
+            <div>
+              <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:.2rem;">Date Generated</div>
+              <div style="font-weight:600;font-size:.875rem;">{{ payroll.generated_on|date:"F d, Y" }}</div>
+            </div>
           </div>
         </div>
-        {% if payroll.status == 'finalized' %}
-        <div style="text-align:right;">
-          <div style="font-size:2.5rem;">✓</div>
-          <div style="font-size:.8rem;opacity:.8;">Official Payslip</div>
+
+        <!-- Earnings & Deductions -->
+        <div class="earnings-deductions">
+
+          <!-- Earnings -->
+          <div>
+            <h3 style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--success,#16a34a);margin-bottom:.75rem;">Earnings</h3>
+            <div style="font-size:.875rem;">
+              <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--border-light,#f0f0f0);">
+                <span style="color:var(--text-secondary);">Basic Salary</span>
+                <span style="font-weight:500;">₱{{ payroll.basic_salary|floatformat:2 }}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--border-light,#f0f0f0);">
+                <span style="color:var(--text-secondary);">Overtime Pay ({{ payroll.overtime_hours|floatformat:2 }}h × 1.25)</span>
+                <span style="font-weight:500;">₱{{ payroll.overtime_pay|floatformat:2 }}</span>
+              </div>
+              {% if payroll.bonuses > 0 %}
+              <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--border-light,#f0f0f0);">
+                <span style="color:var(--text-secondary);">Bonuses</span>
+                <span style="font-weight:500;">₱{{ payroll.bonuses|floatformat:2 }}</span>
+              </div>
+              {% endif %}
+              <div style="display:flex;justify-content:space-between;padding:.6rem 0;font-weight:700;color:var(--success,#16a34a);">
+                <span>Gross Pay</span>
+                <span>₱{{ payroll.gross_salary|floatformat:2 }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Deductions -->
+          <div>
+            <h3 style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--danger,#dc2626);margin-bottom:.75rem;">Deductions</h3>
+            <div style="font-size:.875rem;">
+              <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--border-light,#f0f0f0);">
+                <span style="color:var(--text-secondary);">Absence Deduction</span>
+                <span style="font-weight:500;color:var(--danger,#dc2626);">₱{{ payroll.absence_deduction|floatformat:2 }}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--border-light,#f0f0f0);">
+                <span style="color:var(--text-secondary);">Late Deduction</span>
+                <span style="font-weight:500;color:var(--danger,#dc2626);">₱{{ payroll.late_deduction|floatformat:2 }}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--border-light,#f0f0f0);">
+                <span style="color:var(--text-secondary);">SSS Contribution</span>
+                <span style="font-weight:500;color:var(--danger,#dc2626);">₱{{ payroll.sss_contribution|floatformat:2 }}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--border-light,#f0f0f0);">
+                <span style="color:var(--text-secondary);">PhilHealth Contribution</span>
+                <span style="font-weight:500;color:var(--danger,#dc2626);">₱{{ payroll.philhealth_contribution|floatformat:2 }}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--border-light,#f0f0f0);">
+                <span style="color:var(--text-secondary);">Pag-IBIG Contribution</span>
+                <span style="font-weight:500;color:var(--danger,#dc2626);">₱{{ payroll.pagibig_contribution|floatformat:2 }}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--border-light,#f0f0f0);">
+                <span style="color:var(--text-secondary);">Withholding Tax</span>
+                <span style="font-weight:500;color:var(--danger,#dc2626);">₱{{ payroll.withholding_tax|floatformat:2 }}</span>
+              </div>
+              {% if payroll.other_deductions > 0 %}
+              <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--border-light,#f0f0f0);">
+                <span style="color:var(--text-secondary);">Other Deductions</span>
+                <span style="font-weight:500;color:var(--danger,#dc2626);">₱{{ payroll.other_deductions|floatformat:2 }}</span>
+              </div>
+              {% endif %}
+              <div style="display:flex;justify-content:space-between;padding:.6rem 0;font-weight:700;color:var(--danger,#dc2626);">
+                <span>Total Deductions</span>
+                <span>₱{{ payroll.total_deductions|floatformat:2 }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Attendance Summary -->
+        <div style="background:var(--bg,#f9fafb);border-radius:10px;padding:1.25rem;margin-bottom:1.5rem;">
+          <h3 style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:.75rem;">Attendance Summary</h3>
+          <div class="att-summary-grid">
+            <div>
+              <div style="font-size:1.5rem;font-weight:700;color:var(--primary);">{{ payroll.days_worked }}</div>
+              <div style="font-size:.72rem;color:var(--text-muted);">Days Worked</div>
+            </div>
+            <div>
+              <div style="font-size:1.5rem;font-weight:700;color:var(--danger,#dc2626);">{{ payroll.days_absent }}</div>
+              <div style="font-size:.72rem;color:var(--text-muted);">Absent</div>
+            </div>
+            <div>
+              <div style="font-size:1.5rem;font-weight:700;color:var(--warning,#ca8a04);">{{ payroll.late_minutes }}</div>
+              <div style="font-size:.72rem;color:var(--text-muted);">Late (mins)</div>
+            </div>
+            <div>
+              <div style="font-size:1.5rem;font-weight:700;color:var(--success,#16a34a);">{{ payroll.overtime_hours|floatformat:1 }}</div>
+              <div style="font-size:.72rem;color:var(--text-muted);">OT Hours</div>
+            </div>
+            <div>
+              <div style="font-size:1.5rem;font-weight:700;color:var(--primary);">{{ payroll.year }}</div>
+              <div style="font-size:.72rem;color:var(--text-muted);">Year</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Net Pay -->
+        <div style="background:var(--primary);color:white;border-radius:12px;padding:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+          <div>
+            <div style="font-size:.8rem;opacity:.8;letter-spacing:.05em;">NET PAY FOR {{ payroll.get_month_name|upper }}</div>
+            <div style="font-size:2.25rem;font-weight:800;">₱{{ payroll.net_salary|floatformat:2 }}</div>
+          </div>
+          {% if payroll.status == 'finalized' %}
+          <div style="text-align:right;">
+            <div style="font-size:2.5rem;">✓</div>
+            <div style="font-size:.8rem;opacity:.8;">Official Payslip</div>
+          </div>
+          {% endif %}
+        </div>
+
+        {% if payroll.notes %}
+        <div style="margin-top:1.25rem;padding:1rem;background:var(--bg,#f9fafb);border-radius:10px;font-size:.875rem;color:var(--text-secondary);">
+          <strong>Notes:</strong> {{ payroll.notes }}
         </div>
         {% endif %}
-      </div>
 
-      {% if payroll.notes %}
-      <div style="margin-top:1.5rem;padding:1rem;background:var(--gray-50);border-radius:10px;font-size:.875rem;color:var(--gray-600);">
-        <strong>Notes:</strong> {{ payroll.notes }}
       </div>
-      {% endif %}
-
     </div>
   </div>
+
+  <!-- RIGHT — Summary Card -->
+  <div class="print-hide" style="display:flex;flex-direction:column;gap:16px;">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Summary</span></div>
+      <div class="card-body">
+        <table style="width:100%;font-size:.825rem;border-collapse:collapse;">
+          <tr style="border-bottom:1px solid var(--border-light,#f0f0f0);">
+            <td style="padding:8px 0;color:var(--text-muted);">Employee</td>
+            <td style="padding:8px 0;font-weight:600;text-align:right;">{{ payroll.employee.get_full_name }}</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border-light,#f0f0f0);">
+            <td style="padding:8px 0;color:var(--text-muted);">Period</td>
+            <td style="padding:8px 0;font-weight:600;text-align:right;">{{ payroll.get_month_name }}</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border-light,#f0f0f0);">
+            <td style="padding:8px 0;color:var(--text-muted);">Gross Pay</td>
+            <td style="padding:8px 0;font-weight:600;text-align:right;color:var(--success,#16a34a);">₱{{ payroll.gross_salary|floatformat:2 }}</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border-light,#f0f0f0);">
+            <td style="padding:8px 0;color:var(--text-muted);">Total Deductions</td>
+            <td style="padding:8px 0;font-weight:600;text-align:right;color:var(--danger,#dc2626);">₱{{ payroll.total_deductions|floatformat:2 }}</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 0;color:var(--text-primary);font-weight:700;">Net Pay</td>
+            <td style="padding:10px 0;font-weight:800;text-align:right;color:var(--primary);font-size:1.1rem;">₱{{ payroll.net_salary|floatformat:2 }}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Status</span></div>
+      <div class="card-body">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <span class="badge badge-{{ payroll.status }}">{{ payroll.get_status_display }}</span>
+          <span style="font-size:.8rem;color:var(--text-muted);">{{ payroll.generated_on|date:"F d, Y" }}</span>
+        </div>
+        {% if request.user.is_staff and payroll.status != 'finalized' %}
+        <a href="{% url 'payroll_finalize' payroll.pk %}" class="btn btn-primary btn-sm" style="width:100%;text-align:center;">
+          Finalize Payroll
+        </a>
+        {% endif %}
+        <button onclick="window.print()" class="btn btn-outline btn-sm" style="width:100%;text-align:center;margin-top:8px;">
+          Print / Save PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
-<style>
-@media print {
-  .sidebar, .page-header .btn, nav, .topbar { display:none !important; }
-  #payslip-printable { max-width:100%; }
-  .card { box-shadow:none !important; border:1px solid #ddd; }
-}
-</style>
 {% endblock %}

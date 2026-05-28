@@ -258,20 +258,25 @@ class AttendanceClockOutForm(forms.Form):
 class AttendanceAdminForm(forms.ModelForm):
     class Meta:
         model = Attendance
-        fields = ['employee', 'date', 'time_in', 'time_out', 'status',
-                  'overtime_hours', 'overtime_approved', 'admin_override',
+        fields = ['time_in', 'time_out', 'status',        # removed employee & date
+                  'overtime_hours', 'overtime_approved', 
                   'override_reason', 'notes']
         widgets = {
-            'employee':        forms.Select(attrs={'class': 'form-select'}),
-            'date':            forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'time_in':         forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
-            'time_out':        forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'time_in':         forms.TimeInput(attrs={'class': 'form-control', 'type': 'time', 'step': '1'}),
+            'time_out':        forms.TimeInput(attrs={'class': 'form-control', 'type': 'time', 'step': '1'}),
             'status':          forms.Select(attrs={'class': 'form-select'}),
             'overtime_hours':  forms.NumberInput(attrs={'class': 'form-control', 'step': '0.5'}),
             'override_reason': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'notes':           forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
 
+    def clean_overtime_hours(self):
+        ot = self.cleaned_data.get('overtime_hours')
+        if ot and ot > 2:
+            raise forms.ValidationError("Overtime cannot exceed 2 hours per day.")
+        if ot and ot < 0:
+            raise forms.ValidationError("Overtime hours cannot be negative.")
+        return ot
 
 # ─── LEAVE FORMS ───────────────────────────────────────────────────────────────
 class LeaveRequestForm(forms.ModelForm):
