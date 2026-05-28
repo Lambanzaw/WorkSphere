@@ -1,48 +1,24 @@
 {% extends 'base.html' %}
 {% block title %}Review Leave Request — WorkSphere{% endblock %}
+{% block page_title %}Review Leave Request{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'admin_leave_list' %}" class="btn btn-outline btn-sm">← Back to Leave List</a>
+{% endblock %}
 
 {% block content %}
-
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;">
-  <div>
-    <h1 style="font-size:1.6rem;font-weight:800;color:var(--text-primary);margin-bottom:.25rem;">Review Leave Request</h1>
-    <p style="color:var(--text-secondary);font-size:.9rem;">Approve or reject this leave application</p>
-  </div>
-  <a href="{% url 'admin_leave_list' %}" style="
-    display:inline-flex;align-items:center;gap:.5rem;
-    background:white;color:var(--text-secondary);
-    border:1px solid var(--border-light);
-    padding:.6rem 1.2rem;border-radius:10px;
-    font-weight:600;font-size:.875rem;
-    text-decoration:none;transition:all .2s;"
-    onmouseenter="this.style.borderColor='var(--primary)';this.style.color='var(--primary)';"
-    onmouseleave="this.style.borderColor='var(--border-light)';this.style.color='var(--text-secondary)';">
-    ← Back to Leave List
-  </a>
-</div>
-
-{% if messages %}
-  {% for message in messages %}
-  <div style="
-    padding:1rem 1.25rem;border-radius:12px;margin-bottom:1.25rem;font-weight:500;font-size:.9rem;
-    background:{% if message.tags == 'error' %}#FEE2E2;color:#991B1B;border:1px solid #FECACA;
-    {% else %}#D1FAE5;color:#065F46;border:1px solid #A7F3D0;{% endif %}">
-    {{ message }}
-  </div>
-  {% endfor %}
-{% endif %}
 
 <div style="display:grid;grid-template-columns:1fr 300px;gap:1.5rem;align-items:start;">
 
   <div style="display:flex;flex-direction:column;gap:1.25rem;">
 
     <!-- Details Card -->
-    <div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden;">
-      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
-        <h2 style="font-size:1rem;font-weight:700;color:var(--text-primary);">Leave Request Details</h2>
-        <span style="background:#FEF3C7;color:#92400E;font-size:.75rem;font-weight:600;padding:.3rem .8rem;border-radius:999px;">⏳ Pending Review</span>
+    <div class="card">
+      <div class="card-header">
+        <h2 style="font-size:1rem;font-weight:700;color:var(--text-primary);margin:0;">Leave Request Details</h2>
+        <span style="background:#FEF3C7;color:#92400E;font-size:.75rem;font-weight:600;padding:.3rem .8rem;border-radius:999px;">Pending Review</span>
       </div>
-      <div style="padding:1.5rem;">
+      <div class="card-body">
         <div style="background:var(--primary-bg);border-radius:12px;padding:1.1rem 1.25rem;display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
           <div style="width:48px;height:48px;border-radius:12px;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;flex-shrink:0;">
             {{ leave.employee.first_name|first }}{{ leave.employee.last_name|first }}
@@ -60,7 +36,7 @@
           </div>
           <div style="background:#FAFAFA;border-radius:10px;padding:1rem;">
             <div style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:.35rem;">Duration</div>
-            <div style="font-weight:700;color:var(--primary);font-size:1.1rem;">{{ leave.total_days }} day{{ leave.total_days|pluralize }}</div>
+            <div style="font-weight:700;color:var(--primary);font-size:1.1rem;">{{ working_days }} day{{ working_days|pluralize }}</div>
           </div>
           <div style="background:#FAFAFA;border-radius:10px;padding:1rem;">
             <div style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:.35rem;">Start Date</div>
@@ -78,106 +54,73 @@
           </div>
           <div style="background:#FAFAFA;border-radius:10px;padding:1rem;grid-column:1/-1;">
             <div style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:.35rem;">Date Filed</div>
-            <div style="font-weight:500;color:var(--text-primary);">{{ leave.created_at|date:"F d, Y · h:i A" }}</div>
+            <div style="font-weight:500;color:var(--text-primary);">{{ leave.filed_on|date:"F d, Y · h:i A" }}</div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Decision Form Card -->
-    <div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden;">
-      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border-light);">
-        <h2 style="font-size:1rem;font-weight:700;color:var(--text-primary);">Your Decision</h2>
-        <p style="font-size:.82rem;color:var(--text-muted);margin-top:.2rem;">This action will be recorded in the audit log.</p>
+    <div class="card">
+      <div class="card-header">
+        <h2 style="font-size:1rem;font-weight:700;color:var(--text-primary);margin:0;">Your Decision</h2>
       </div>
-      <div style="padding:1.5rem;">
+      <div class="card-body">
+        <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:1.25rem;">This action will be recorded in the audit log.</p>
 
-        <!-- THE REAL FORM — posts action + remarks correctly -->
         <form method="post" id="decision-form">
           {% csrf_token %}
-          <!-- Hidden action field that the view reads via form.cleaned_data['action'] -->
           <input type="hidden" name="action" id="action-value" value="">
 
-          <div style="margin-bottom:1.25rem;">
-            <label style="display:block;font-size:.85rem;font-weight:600;color:var(--text-primary);margin-bottom:.5rem;">
+          <div class="form-group">
+            <label class="form-label">
               Remarks / Notes
               <span id="remarks-required-hint" style="font-weight:400;color:var(--danger);display:none;"> * required for rejection</span>
               <span id="remarks-optional-hint" style="font-weight:400;color:var(--text-muted);"> (optional)</span>
             </label>
             <textarea name="remarks" id="remarks-field" rows="3"
               placeholder="Optional remarks or reason for rejection..."
-              style="width:100%;padding:.75rem 1rem;border:1px solid var(--border-light);border-radius:10px;font-family:inherit;font-size:.9rem;resize:vertical;outline:none;transition:border-color .2s;"
-              onfocus="this.style.borderColor='var(--primary)';"
-              onblur="this.style.borderColor='var(--border-light)';"></textarea>
-            <p style="font-size:.8rem;color:var(--text-muted);margin-top:.4rem;">Visible to the employee.</p>
+              class="form-control"></textarea>
+            <span style="font-size:.8rem;color:var(--text-muted);">Visible to the employee.</span>
           </div>
 
-          <div style="display:flex;gap:.75rem;flex-wrap:wrap;">
-            <button type="button" onclick="showModal('approved')" style="
-                display:inline-flex;align-items:center;gap:.5rem;
-                background:#22C55E;color:white;border:none;cursor:pointer;
-                padding:.7rem 1.4rem;border-radius:10px;font-weight:700;font-size:.9rem;
-                box-shadow:0 4px 12px rgba(34,197,94,0.3);transition:all .2s;"
-              onmouseenter="this.style.background='#16A34A';this.style.transform='translateY(-1px)';"
-              onmouseleave="this.style.background='#22C55E';this.style.transform='';">
-              ✓ Approve Leave
-            </button>
-            <button type="button" onclick="showModal('rejected')" style="
-                display:inline-flex;align-items:center;gap:.5rem;
-                background:#EF4444;color:white;border:none;cursor:pointer;
-                padding:.7rem 1.4rem;border-radius:10px;font-weight:700;font-size:.9rem;
-                box-shadow:0 4px 12px rgba(239,68,68,0.3);transition:all .2s;"
-              onmouseenter="this.style.background='#DC2626';this.style.transform='translateY(-1px)';"
-              onmouseleave="this.style.background='#EF4444';this.style.transform='';">
-              ✗ Reject Leave
-            </button>
-            <a href="{% url 'admin_leave_list' %}" style="
-              display:inline-flex;align-items:center;
-              background:white;color:var(--text-secondary);
-              border:1px solid var(--border-light);
-              padding:.7rem 1.2rem;border-radius:10px;
-              font-weight:600;font-size:.9rem;text-decoration:none;transition:all .2s;"
-              onmouseenter="this.style.borderColor='var(--primary)';this.style.color='var(--primary)';"
-              onmouseleave="this.style.borderColor='var(--border-light)';this.style.color='var(--text-secondary)';">
-              Decide Later
-            </a>
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-top:16px;">
+            <button type="button" onclick="showModal('approved')" class="btn btn-success btn-sm">Approve Leave</button>
+            <button type="button" onclick="showModal('rejected')" class="btn btn-danger btn-sm">Reject Leave</button>
+            <a href="{% url 'admin_leave_list' %}" class="btn btn-outline btn-sm">Decide Later</a>
           </div>
         </form>
-
       </div>
     </div>
   </div>
 
   <!-- Right Sidebar -->
   <div style="display:flex;flex-direction:column;gap:1.25rem;">
-    <div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden;">
-      <div style="padding:1.1rem 1.25rem;border-bottom:1px solid var(--border-light);">
-        <h2 style="font-size:.95rem;font-weight:700;color:var(--text-primary);">Leave Balances</h2>
-      </div>
-      <div style="padding:.75rem;">
-        {% for b in employee_balances %}
-        <div style="padding:.75rem 1rem;border-radius:10px;margin-bottom:.4rem;display:flex;justify-content:space-between;align-items:center;
-          background:{% if b.leave_type == leave.leave_type %}var(--primary-bg){% else %}#FAFAFA{% endif %};
-          border:1px solid {% if b.leave_type == leave.leave_type %}#C7D2FE{% else %}transparent{% endif %};">
-          <div>
-            <div style="font-size:.85rem;font-weight:600;color:var(--text-primary);">{{ b.leave_type.name }}</div>
-            {% if b.leave_type == leave.leave_type %}<div style="font-size:.72rem;color:var(--primary);font-weight:600;">← This request</div>{% endif %}
-          </div>
-          <div style="font-size:1.1rem;font-weight:800;color:{% if b.remaining_days > 0 %}#22C55E{% else %}#EF4444{% endif %};">
-            {{ b.remaining_days }}<span style="font-size:.72rem;font-weight:500;color:var(--text-muted);"> left</span>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Leave Balance</span></div>
+      <div class="card-body">
+        {% if balance %}
+        <div style="padding:.75rem 1rem;border-radius:10px;background:var(--primary-bg);border:1px solid #C7D2FE;margin-bottom:.5rem;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-size:.85rem;font-weight:600;color:var(--text-primary);">{{ leave.leave_type.name }}</div>
+              <div style="font-size:.72rem;color:var(--primary);font-weight:600;">This request uses {{ working_days }} day{{ working_days|pluralize }}</div>
+            </div>
+            <div style="font-size:1.25rem;font-weight:800;color:{% if balance.remaining_days > 0 %}#22C55E{% else %}#EF4444{% endif %};">
+              {{ balance.remaining_days }}<span style="font-size:.72rem;font-weight:500;color:var(--text-muted);"> left</span>
+            </div>
           </div>
         </div>
-        {% empty %}
-        <p style="padding:.75rem;color:var(--text-muted);font-size:.85rem;text-align:center;">No balances found</p>
-        {% endfor %}
+        {% else %}
+        <p style="color:var(--text-muted);font-size:.85rem;text-align:center;padding:8px;">No balance record found.</p>
+        {% endif %}
       </div>
     </div>
 
-    <div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);overflow:hidden;">
-      <div style="padding:1.1rem 1.25rem;border-bottom:1px solid var(--border-light);">
-        <h2 style="font-size:.95rem;font-weight:700;color:var(--text-primary);">Recent Leaves</h2>
-      </div>
-      <div style="padding:.75rem;">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Recent Leaves</span></div>
+      <div class="card-body">
+        {% with recent_leaves=leave.employee.leaverequest_set.all|slice:":5" %}
         {% if recent_leaves %}
           {% for r in recent_leaves %}
           <div style="padding:.75rem 1rem;border-radius:10px;background:#FAFAFA;margin-bottom:.4rem;display:flex;justify-content:space-between;align-items:center;">
@@ -185,61 +128,43 @@
               <div style="font-size:.85rem;font-weight:600;color:var(--text-primary);">{{ r.leave_type.name }}</div>
               <div style="font-size:.76rem;color:var(--text-muted);">{{ r.start_date|date:"M d" }} – {{ r.end_date|date:"M d, Y" }}</div>
             </div>
-            <span style="font-size:.72rem;font-weight:600;padding:.2rem .6rem;border-radius:999px;
-              {% if r.status == 'approved' %}background:#D1FAE5;color:#065F46;
-              {% elif r.status == 'rejected' %}background:#FEE2E2;color:#991B1B;
-              {% else %}background:#FEF3C7;color:#92400E;{% endif %}">
-              {{ r.status|capfirst }}
-            </span>
+            <span class="badge badge-{{ r.status }}">{{ r.status|capfirst }}</span>
           </div>
           {% endfor %}
         {% else %}
-          <p style="padding:.75rem;color:var(--text-muted);font-size:.85rem;text-align:center;">No recent leaves.</p>
+          <p style="color:var(--text-muted);font-size:.85rem;text-align:center;">No recent leaves.</p>
         {% endif %}
+        {% endwith %}
       </div>
     </div>
   </div>
 </div>
 
-<!-- Custom Confirm Modal -->
-<div id="confirm-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
-  <div style="background:white;border-radius:20px;padding:2rem;width:100%;max-width:440px;margin:1rem;box-shadow:0 25px 50px rgba(0,0,0,0.2);animation:modalIn .2s ease;">
-    <div id="modal-icon" style="width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:1.25rem;"></div>
-    <h3 id="modal-title" style="font-size:1.15rem;font-weight:800;color:var(--text-primary);margin-bottom:.5rem;"></h3>
-    <p id="modal-message" style="font-size:.9rem;color:var(--text-secondary);margin-bottom:1.5rem;line-height:1.6;"></p>
-    <div style="background:#FAFAFA;border-radius:10px;padding:.875rem 1rem;margin-bottom:1.5rem;display:flex;justify-content:space-between;font-size:.85rem;">
-      <div>
-        <div style="font-weight:600;color:var(--text-primary);">{{ leave.employee.get_full_name }}</div>
-        <div style="color:var(--text-muted);">{{ leave.leave_type.name }} · {{ leave.total_days }} day{{ leave.total_days|pluralize }}</div>
-      </div>
-      <div style="text-align:right;color:var(--text-muted);">{{ leave.start_date|date:"M d" }} – {{ leave.end_date|date:"M d, Y" }}</div>
-    </div>
-    <div style="display:flex;gap:.75rem;">
-      <button id="modal-confirm-btn" onclick="submitDecision()" style="flex:1;padding:.75rem;border:none;cursor:pointer;border-radius:10px;font-weight:700;font-size:.9rem;color:white;transition:all .2s;"></button>
-      <button onclick="closeModal()" style="flex:1;padding:.75rem;border:1px solid var(--border-light);background:white;cursor:pointer;border-radius:10px;font-weight:600;font-size:.9rem;color:var(--text-secondary);">Cancel</button>
+<!-- Confirm Modal -->
+<div id="confirm-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.4);align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:12px;padding:28px 32px;width:100%;max-width:380px;margin:1rem;box-shadow:0 8px 32px rgba(0,0,0,0.14);">
+    <h3 id="modal-title" style="font-size:1rem;font-weight:700;color:var(--text-primary,#111);margin:0 0 8px 0;"></h3>
+    <p id="modal-message" style="font-size:.875rem;color:var(--text-secondary,#555);margin:0 0 24px 0;line-height:1.5;"></p>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button onclick="closeModal()" class="btn btn-outline btn-sm">Cancel</button>
+      <button id="modal-confirm-btn" onclick="submitDecision()" class="btn btn-sm" style="color:white;border:none;cursor:pointer;"></button>
     </div>
   </div>
 </div>
 
-<style>
-@keyframes modalIn {
-  from { opacity:0; transform:scale(.95) translateY(10px); }
-  to   { opacity:1; transform:scale(1) translateY(0); }
-}
-</style>
+{% endblock %}
 
+{% block extra_js %}
 <script>
 let pendingAction = '';
 
 function showModal(action) {
   pendingAction = action;
   const modal = document.getElementById('confirm-modal');
-  const icon  = document.getElementById('modal-icon');
   const title = document.getElementById('modal-title');
   const msg   = document.getElementById('modal-message');
   const btn   = document.getElementById('modal-confirm-btn');
 
-  // Validate: rejection requires remarks
   if (action === 'rejected') {
     const remarks = document.getElementById('remarks-field').value.trim();
     if (!remarks) {
@@ -252,21 +177,15 @@ function showModal(action) {
   }
 
   if (action === 'approved') {
-    icon.style.background = '#D1FAE5';
-    icon.textContent      = '✅';
-    title.textContent     = 'Approve Leave Request?';
-    msg.textContent       = '{{ leave.total_days }} day(s) will be deducted from {{ leave.employee.get_full_name }}\'s {{ leave.leave_type.name }} balance. This cannot be undone.';
-    btn.textContent       = 'Yes, Approve';
-    btn.style.background  = '#22C55E';
-    btn.style.boxShadow   = '0 4px 12px rgba(34,197,94,0.3)';
+    title.textContent    = 'Approve Leave Request?';
+    msg.textContent      = '{{ working_days }} day(s) will be deducted from {{ leave.employee.get_full_name }}\'s {{ leave.leave_type.name }} balance. This cannot be undone.';
+    btn.textContent      = 'Yes, Approve';
+    btn.style.background = '#22C55E';
   } else {
-    icon.style.background = '#FEE2E2';
-    icon.textContent      = '❌';
-    title.textContent     = 'Reject Leave Request?';
-    msg.textContent       = 'This will reject {{ leave.employee.get_full_name }}\'s leave request. The employee will be notified.';
-    btn.textContent       = 'Yes, Reject';
-    btn.style.background  = '#EF4444';
-    btn.style.boxShadow   = '0 4px 12px rgba(239,68,68,0.3)';
+    title.textContent    = 'Reject Leave Request?';
+    msg.textContent      = 'This will reject {{ leave.employee.get_full_name }}\'s leave request. The employee will be notified.';
+    btn.textContent      = 'Yes, Reject';
+    btn.style.background = '#EF4444';
   }
 
   modal.style.display = 'flex';
@@ -279,7 +198,6 @@ function closeModal() {
 }
 
 function submitDecision() {
-  // Set the correct action value the view expects: 'approved' or 'rejected'
   document.getElementById('action-value').value = pendingAction;
   document.getElementById('decision-form').submit();
 }
@@ -291,5 +209,4 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') closeModal();
 });
 </script>
-
 {% endblock %}

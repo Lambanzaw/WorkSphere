@@ -1,101 +1,264 @@
 {% extends 'base.html' %}
 {% block title %}My Payslips — WorkSphere{% endblock %}
+{% block page_title %}My Payslips{% endblock %}
+
+{% block extra_css %}
+<style>
+  .payslip-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .payslip-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,.1);
+  }
+  .payslip-inner-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: .6rem;
+    margin-bottom: .75rem;
+  }
+  @media (max-width: 400px) {
+    .payslip-inner-grid { grid-template-columns: 1fr !important; }
+  }
+  .archive-year {
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 12px;
+    background: white;
+  }
+  .archive-year-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    transition: background .15s;
+  }
+  .archive-year-header:hover {
+    background: var(--bg, #f9fafb);
+  }
+  .archive-year-body {
+    display: none;
+    padding: 16px;
+    border-top: 1px solid var(--border-light);
+  }
+  .archive-year-body.open {
+    display: block;
+  }
+  .archive-chevron {
+    transition: transform .2s;
+  }
+  .archive-chevron.open {
+    transform: rotate(180deg);
+  }
+</style>
+{% endblock %}
 
 {% block content %}
 
-<!-- Page Header -->
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;">
-  <div>
-    <h1 style="font-size:1.6rem;font-weight:800;color:var(--text-primary);margin-bottom:.25rem;">My Payslips</h1>
-    <p style="color:var(--text-secondary);font-size:.9rem;">View your monthly payslip history</p>
+{% if payrolls %}
+
+{% now "Y" as current_year %}
+
+<!-- Separate current year from past years -->
+{% regroup payrolls by year as payrolls_by_year %}
+
+<!-- Stats from latest payslip -->
+<div class="stats-grid" style="margin-bottom:28px;">
+  <div class="stat-card">
+    <div class="stat-card-header">
+      <span class="stat-card-label">Total Payslips</span>
+      <div class="stat-icon indigo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+      </div>
+    </div>
+    <div class="stat-value">{{ payrolls|length }}</div>
+    <div class="stat-sub">All time records</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-header">
+      <span class="stat-card-label">Latest Net Pay</span>
+      <div class="stat-icon green">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </div>
+    </div>
+    <div class="stat-value" style="font-size:1.4rem;">₱{{ payrolls.0.net_salary|floatformat:2 }}</div>
+    <div class="stat-sub">{{ payrolls.0.get_month_name }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-header">
+      <span class="stat-card-label">Latest Basic</span>
+      <div class="stat-icon amber">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      </div>
+    </div>
+    <div class="stat-value" style="font-size:1.4rem;">₱{{ payrolls.0.basic_salary|floatformat:2 }}</div>
+    <div class="stat-sub">Monthly basic salary</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-header">
+      <span class="stat-card-label">Latest Deductions</span>
+      <div class="stat-icon red">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+    </div>
+    <div class="stat-value" style="font-size:1.4rem;">₱{{ payrolls.0.total_deductions|floatformat:2 }}</div>
+    <div class="stat-sub">Total deductions</div>
   </div>
 </div>
 
-{% if payrolls %}
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.25rem;">
-  {% for p in payrolls %}
-  <div style="
-    background:white;border-radius:16px;border:1px solid var(--border-light);
-    box-shadow:var(--shadow-sm);overflow:hidden;transition:all .2s;"
-    onmouseenter="this.style.transform='translateY(-3px)';this.style.boxShadow='var(--shadow-lg)';"
-    onmouseleave="this.style.transform='';this.style.boxShadow='var(--shadow-sm)';">
+{% for year_group in payrolls_by_year %}
 
-    <!-- Card Top -->
-    <div style="
-      background:{% if p.status == 'finalized' %}var(--primary){% else %}var(--gray-400,#9CA3AF){% endif %};
-      color:white;padding:1.25rem;position:relative;overflow:hidden;">
-      <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:rgba(255,255,255,.1);border-radius:50%;"></div>
-      <div style="position:absolute;bottom:-30px;right:20px;width:60px;height:60px;background:rgba(255,255,255,.08);border-radius:50%;"></div>
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative;">
-        <div>
-          <div style="font-size:1.15rem;font-weight:800;">{{ p.get_month_display }} {{ p.year }}</div>
-          <div style="font-size:.8rem;opacity:.8;margin-top:.2rem;">Pay Period</div>
-        </div>
-        {% if p.status == 'finalized' %}
-          <span style="background:rgba(255,255,255,.2);padding:.3rem .8rem;border-radius:999px;font-size:.75rem;font-weight:600;">
-            ✓ Official
-          </span>
-        {% else %}
-          <span style="background:rgba(255,255,255,.15);padding:.3rem .8rem;border-radius:999px;font-size:.75rem;">
-            Draft
-          </span>
-        {% endif %}
-      </div>
+  {% if year_group.grouper|stringformat:"s" == current_year %}
+  <!-- Current Year — show as cards -->
+  <div style="margin-bottom:32px;">
+    <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+      {{ year_group.grouper }} — Current Year
+      <span style="flex:1;height:1px;background:var(--border-light,#eee);display:block;"></span>
     </div>
-
-    <!-- Card Body -->
-    <div style="padding:1.25rem;">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1rem;">
-        <div style="background:#FAFAFA;border-radius:10px;padding:.75rem;">
-          <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:.2rem;">Basic</div>
-          <div style="font-weight:700;font-size:.9rem;color:var(--text-primary);">₱{{ p.basic_salary|floatformat:2 }}</div>
-        </div>
-        <div style="background:#FAFAFA;border-radius:10px;padding:.75rem;">
-          <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:.2rem;">Deductions</div>
-          <div style="font-weight:700;font-size:.9rem;color:#EF4444;">₱{{ p.total_deductions|floatformat:2 }}</div>
-        </div>
-        <div style="background:#FAFAFA;border-radius:10px;padding:.75rem;">
-          <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:.2rem;">Present</div>
-          <div style="font-weight:700;font-size:.9rem;color:var(--text-primary);">{{ p.days_present }}/{{ p.working_days }} days</div>
-        </div>
-        <div style="background:#FAFAFA;border-radius:10px;padding:.75rem;">
-          <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:.2rem;">Late (mins)</div>
-          <div style="font-weight:700;font-size:.9rem;color:{% if p.total_late_minutes > 0 %}#F59E0B{% else %}var(--text-primary){% endif %};">
-            {{ p.total_late_minutes }}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;">
+      {% for p in year_group.list %}
+      <div class="payslip-card">
+        <div style="background:{% if p.status == 'finalized' %}var(--primary){% else %}#9CA3AF{% endif %};color:white;padding:1.25rem;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:-20px;right:-20px;width:70px;height:70px;background:rgba(255,255,255,.1);border-radius:50%;"></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative;">
+            <div>
+              <div style="font-size:1.1rem;font-weight:800;">{{ p.get_month_name }}</div>
+              <div style="font-size:.78rem;opacity:.8;margin-top:.15rem;">Pay Period</div>
+            </div>
+            {% if p.status == 'finalized' %}
+            <span style="background:rgba(255,255,255,.2);padding:.25rem .7rem;border-radius:999px;font-size:.72rem;font-weight:600;">✓ Official</span>
+            {% else %}
+            <span style="background:rgba(255,255,255,.15);padding:.25rem .7rem;border-radius:999px;font-size:.72rem;">Draft</span>
+            {% endif %}
           </div>
         </div>
+        <div style="padding:1rem;">
+          <div class="payslip-inner-grid">
+            <div style="background:#FAFAFA;border-radius:8px;padding:.75rem;">
+              <div style="font-size:.7rem;color:var(--text-muted);margin-bottom:.2rem;">Basic</div>
+              <div style="font-weight:700;font-size:.875rem;">₱{{ p.basic_salary|floatformat:2 }}</div>
+            </div>
+            <div style="background:#FAFAFA;border-radius:8px;padding:.75rem;">
+              <div style="font-size:.7rem;color:var(--text-muted);margin-bottom:.2rem;">Deductions</div>
+              <div style="font-weight:700;font-size:.875rem;color:#EF4444;">₱{{ p.total_deductions|floatformat:2 }}</div>
+            </div>
+            <div style="background:#FAFAFA;border-radius:8px;padding:.75rem;">
+              <div style="font-size:.7rem;color:var(--text-muted);margin-bottom:.2rem;">Days Worked</div>
+              <div style="font-weight:700;font-size:.875rem;">{{ p.days_worked }} days</div>
+            </div>
+            <div style="background:#FAFAFA;border-radius:8px;padding:.75rem;">
+              <div style="font-size:.7rem;color:var(--text-muted);margin-bottom:.2rem;">Late (mins)</div>
+              <div style="font-weight:700;font-size:.875rem;color:{% if p.late_minutes > 0 %}#F59E0B{% else %}var(--text-primary){% endif %};">{{ p.late_minutes }}</div>
+            </div>
+          </div>
+          <div style="background:var(--primary-bg);border-radius:8px;padding:.75rem 1rem;display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;">
+            <span style="font-size:.78rem;color:var(--primary);font-weight:700;text-transform:uppercase;letter-spacing:.04em;">Net Pay</span>
+            <span style="font-size:1.25rem;font-weight:800;color:var(--primary);">₱{{ p.net_salary|floatformat:2 }}</span>
+          </div>
+          <a href="{% url 'my_payslip_detail' p.pk %}" class="btn btn-outline btn-sm"
+            style="display:flex;align-items:center;justify-content:center;width:100%;box-sizing:border-box;">
+            View Payslip →
+          </a>
+        </div>
       </div>
-
-      <!-- Net Pay -->
-      <div style="background:var(--primary-bg);border-radius:10px;padding:.875rem 1rem;display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-        <span style="font-size:.82rem;color:var(--primary);font-weight:600;">NET PAY</span>
-        <span style="font-size:1.35rem;font-weight:800;color:var(--primary);">₱{{ p.net_salary|floatformat:2 }}</span>
-      </div>
-
-      <!-- View Button -->
-      <a href="{% url 'my_payslip_detail' p.pk %}" style="
-        display:flex;align-items:center;justify-content:center;gap:.4rem;
-        background:white;color:var(--primary);
-        border:1.5px solid var(--primary);
-        padding:.6rem;border-radius:10px;
-        font-weight:600;font-size:.875rem;
-        text-decoration:none;transition:all .2s;width:100%;box-sizing:border-box;"
-        onmouseenter="this.style.background='var(--primary)';this.style.color='white';"
-        onmouseleave="this.style.background='white';this.style.color='var(--primary)';">
-        View Payslip →
-      </a>
+      {% endfor %}
     </div>
   </div>
-  {% endfor %}
+
+  {% else %}
+  <!-- Past Years — collapsible archive -->
+  {% if forloop.first or year_group.grouper|stringformat:"s" != current_year %}
+  {% endif %}
+  {% endif %}
+
+{% endfor %}
+
+<!-- Archive Section -->
+{% for year_group in payrolls_by_year %}
+{% if year_group.grouper|stringformat:"s" != current_year %}
+{% if forloop.first %}
+<div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+  Past Years Archive
+  <span style="flex:1;height:1px;background:var(--border-light,#eee);display:block;"></span>
 </div>
+{% endif %}
+
+<div class="archive-year">
+  <div class="archive-year-header" onclick="toggleArchive('archive-{{ year_group.grouper }}')">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="width:36px;height:36px;border-radius:8px;background:#EEF2FF;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+      </div>
+      <div>
+        <div style="font-weight:700;font-size:.95rem;color:var(--text-primary);">{{ year_group.grouper }}</div>
+        <div style="font-size:.75rem;color:var(--text-muted);">{{ year_group.list|length }} payslip{{ year_group.list|length|pluralize }}</div>
+      </div>
+    </div>
+    <svg class="archive-chevron" id="chevron-archive-{{ year_group.grouper }}" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><polyline points="6,9 12,15 18,9"/></svg>
+  </div>
+  <div class="archive-year-body" id="archive-{{ year_group.grouper }}">
+    <table style="width:100%;border-collapse:collapse;font-size:.875rem;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border-light);">
+          <th style="padding:8px 12px;text-align:left;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);">Month</th>
+          <th style="padding:8px 12px;text-align:left;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);">Basic</th>
+          <th style="padding:8px 12px;text-align:left;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);">Deductions</th>
+          <th style="padding:8px 12px;text-align:left;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);">Net Pay</th>
+          <th style="padding:8px 12px;text-align:left;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);">Status</th>
+          <th style="padding:8px 12px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in year_group.list %}
+        <tr style="border-bottom:1px solid var(--border-light,#f0f0f0);">
+          <td style="padding:10px 12px;font-weight:600;">{{ p.get_month_name }}</td>
+          <td style="padding:10px 12px;">₱{{ p.basic_salary|floatformat:2 }}</td>
+          <td style="padding:10px 12px;color:#EF4444;">₱{{ p.total_deductions|floatformat:2 }}</td>
+          <td style="padding:10px 12px;font-weight:700;color:var(--primary);">₱{{ p.net_salary|floatformat:2 }}</td>
+          <td style="padding:10px 12px;">
+            <span class="badge badge-{{ p.status }}">{{ p.get_status_display }}</span>
+          </td>
+          <td style="padding:10px 12px;">
+            <a href="{% url 'my_payslip_detail' p.pk %}" class="btn btn-outline btn-sm">View</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endfor %}
 
 {% else %}
-<div style="background:white;border-radius:16px;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);">
-  <div style="padding:4rem 2rem;text-align:center;">
+<div style="display:flex;align-items:center;justify-content:center;min-height:60vh;">
+  <div style="text-align:center;">
+    <div style="width:64px;height:64px;border-radius:16px;background:var(--border-light);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    </div>
     <h3 style="font-size:1.1rem;font-weight:700;color:var(--text-primary);margin-bottom:.5rem;">No Payslips Yet</h3>
     <p style="color:var(--text-muted);font-size:.9rem;">Your payslips will appear here once HR processes your payroll.</p>
   </div>
 </div>
 {% endif %}
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleArchive(id) {
+  var body = document.getElementById(id);
+  var chevron = document.getElementById('chevron-' + id);
+  body.classList.toggle('open');
+  chevron.classList.toggle('open');
+}
+</script>
 {% endblock %}

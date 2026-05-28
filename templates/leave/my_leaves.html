@@ -82,9 +82,10 @@
           <td><span class="badge badge-{{ leave.status }}">{{ leave.status|capfirst }}</span></td>
           <td>
             {% if leave.status == 'pending' %}
-            <a href="{% url 'leave_cancel' leave.pk %}"
-               onclick="return confirm('Cancel this leave request?')"
-               class="btn btn-danger btn-sm">Cancel</a>
+            <button type="button" class="btn btn-danger btn-sm"
+              onclick="openCancelModal('{% url 'leave_cancel' leave.pk %}', '{{ leave.leave_type.name }}', '{{ leave.start_date|date:'M d, Y' }}', '{{ leave.end_date|date:'M d, Y' }}')">
+              Cancel
+            </button>
             {% else %}
             <span style="color:var(--text-faint);">—</span>
             {% endif %}
@@ -102,4 +103,39 @@
   </div>
 </div>
 
+<!-- Cancel Leave Modal -->
+<div id="cancelModal" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,0.4);" onclick="closeCancelModal()"></div>
+  <div style="position:relative;background:var(--surface,#fff);border-radius:12px;padding:28px 32px;width:100%;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
+    <div style="margin-bottom:8px;">
+      <h3 style="font-size:1rem;font-weight:700;margin:0;color:var(--text-primary,#111);">Cancel Leave Request</h3>
+    </div>
+    <p id="cancelModalText" style="font-size:.875rem;color:var(--text-secondary,#555);margin:12px 0 24px 0;line-height:1.5;"></p>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button type="button" onclick="closeCancelModal()" class="btn btn-outline btn-sm">Keep It</button>
+      <form id="cancelForm" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger btn-sm">Yes, Cancel</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openCancelModal(actionUrl, leaveType, startDate, endDate) {
+  document.getElementById('cancelModalText').textContent =
+    'Are you sure you want to cancel your ' + leaveType + ' request from ' + startDate + ' to ' + endDate + '? This cannot be undone.';
+  document.getElementById('cancelForm').action = actionUrl;
+  document.getElementById('cancelModal').style.display = 'flex';
+}
+function closeCancelModal() {
+  document.getElementById('cancelModal').style.display = 'none';
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeCancelModal();
+});
+</script>
 {% endblock %}

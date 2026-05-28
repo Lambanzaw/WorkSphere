@@ -10,6 +10,71 @@
 {% endif %}
 {% endblock %}
 
+{% block extra_css %}
+<style>
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  .cal-cell {
+    min-height: 80px;
+    border-radius: 10px;
+    padding: 8px;
+    border: 1.5px solid #F3F4F6;
+    background: white;
+  }
+
+  .cal-day-num {
+    font-size: .8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+
+  .cal-label {
+    font-size: .68rem;
+    font-weight: 600;
+    margin-top: 3px;
+  }
+
+  .cal-sub {
+    font-size: .65rem;
+    margin-top: 2px;
+  }
+
+  /* Mobile — vertical list */
+  @media (max-width: 640px) {
+    .cal-grid { grid-template-columns: 1fr; gap: 4px; }
+    .cal-header-grid { display: none !important; }
+    .cal-cell { min-height: auto; display: flex; align-items: center; gap: 12px; padding: 10px 12px; }
+    .cal-cell-empty { display: none !important; }
+    .cal-day-num {
+      font-size: .85rem;
+      font-weight: 700;
+      min-width: 28px;
+      margin-bottom: 0;
+    }
+    .cal-label { font-size: .78rem; margin-top: 0; }
+    .cal-sub { font-size: .72rem; }
+    .cal-day-info { display: flex; flex-direction: column; gap: 1px; }
+    .cal-day-name {
+      font-size: .68rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      min-width: 32px;
+    }
+  }
+
+  @media (min-width: 641px) {
+    .cal-day-name { display: none; }
+    .cal-day-info { display: contents; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 
 <!-- Month Filter -->
@@ -69,8 +134,8 @@
   </div>
   <div style="padding:16px;">
 
-    <!-- Day Headers -->
-    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;">
+    <!-- Day Headers (desktop only) -->
+    <div class="cal-grid cal-header-grid" style="margin-bottom:6px;">
       {% for day in day_names %}
       <div style="text-align:center;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
         color:{% if day == 'Sat' or day == 'Sun' %}#EF4444{% else %}var(--text-muted){% endif %};
@@ -80,119 +145,131 @@
 
     <!-- Weeks -->
     {% for week in weeks %}
-    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;">
+    <div class="cal-grid">
       {% for day in week %}
-      {% if day is None %}
-      <div style="min-height:80px;"></div>
-      {% else %}
 
-      {% if day.leave %}
-        {% with bg="#DBEAFE" border="#BFDBFE" label="On Leave" label_color="#1E40AF" %}
-        <div style="min-height:80px;border-radius:10px;padding:8px;background:{{ bg }};border:1.5px solid {{ border }};
-          {% if day.is_today %}box-shadow:0 0 0 2px #4F46E5;{% endif %}
-          {% if day.is_weekend %}opacity:.6;{% endif %}
-          position:relative;">
-          <div style="font-size:.8rem;font-weight:700;color:var(--text-primary);margin-bottom:4px;">{{ day.day }}</div>
-          <div style="font-size:.68rem;font-weight:600;color:{{ label_color }};background:{{ border }};padding:2px 6px;border-radius:4px;display:inline-block;">{{ label }}</div>
-          <div style="font-size:.65rem;color:#1E40AF;margin-top:3px;">{{ day.leave.leave_type.name }}</div>
+      {% if day is None %}
+      <div class="cal-cell cal-cell-empty" style="background:transparent;border-color:transparent;min-height:80px;"></div>
+
+      {% elif day.leave %}
+      <div class="cal-cell" style="background:#DBEAFE;border-color:#BFDBFE;{% if day.is_today %}box-shadow:0 0 0 2px #4F46E5;{% endif %}">
+        <span class="cal-day-name">{{ day.date|date:"D" }}</span>
+        <div class="cal-day-info">
+          <div class="cal-day-num" style="color:{% if day.is_today %}#4F46E5{% else %}var(--text-primary){% endif %};">{{ day.day }}</div>
+          <div class="cal-label" style="color:#1E40AF;">On Leave</div>
+          <div class="cal-sub" style="color:#1E40AF;">{{ day.leave.leave_type.name }}</div>
         </div>
-        {% endwith %}
+      </div>
 
       {% elif day.is_weekend %}
-      <div style="min-height:80px;border-radius:10px;padding:8px;background:#F9FAFB;border:1.5px solid #F3F4F6;
-        {% if day.is_today %}box-shadow:0 0 0 2px #4F46E5;{% endif %}">
-        <div style="font-size:.8rem;font-weight:700;color:#9CA3AF;">{{ day.day }}</div>
-        <div style="font-size:.68rem;color:#D1D5DB;margin-top:4px;">Rest Day</div>
+      <div class="cal-cell" style="background:#F9FAFB;border-color:#F3F4F6;{% if day.is_today %}box-shadow:0 0 0 2px #4F46E5;{% endif %}">
+        <span class="cal-day-name" style="color:#9CA3AF;">{{ day.date|date:"D" }}</span>
+        <div class="cal-day-info">
+          <div class="cal-day-num" style="color:#9CA3AF;">{{ day.day }}</div>
+          <div class="cal-sub" style="color:#D1D5DB;">Rest Day</div>
+        </div>
       </div>
 
       {% elif day.is_future %}
-      <div style="min-height:80px;border-radius:10px;padding:8px;background:white;border:1.5px solid #F3F4F6;
-        {% if day.is_today %}background:#EEF2FF;border-color:#4F46E5;box-shadow:0 0 0 2px #4F46E5;{% endif %}">
-        <div style="font-size:.8rem;font-weight:700;color:{% if day.is_today %}#4F46E5{% else %}var(--text-primary){% endif %};">{{ day.day }}</div>
-        {% if day.is_today %}
-        <div style="font-size:.68rem;color:#4F46E5;font-weight:600;margin-top:4px;">Today</div>
-        <div style="font-size:.65rem;color:#6366f1;">8AM–5PM</div>
-        {% else %}
-        <div style="font-size:.65rem;color:#D1D5DB;margin-top:4px;">Scheduled</div>
-        <div style="font-size:.65rem;color:#E5E7EB;">8AM–5PM</div>
-        {% endif %}
+      <div class="cal-cell" style="{% if day.is_today %}background:#EEF2FF;border-color:#4F46E5;box-shadow:0 0 0 2px #4F46E5;{% else %}background:white;border-color:#F3F4F6;{% endif %}">
+        <span class="cal-day-name">{{ day.date|date:"D" }}</span>
+        <div class="cal-day-info">
+          <div class="cal-day-num" style="color:{% if day.is_today %}#4F46E5{% else %}var(--text-primary){% endif %};">{{ day.day }}</div>
+          {% if day.is_today %}
+          <div class="cal-label" style="color:#4F46E5;">Today</div>
+          <div class="cal-sub" style="color:#6366f1;">8AM–5PM</div>
+          {% else %}
+          <div class="cal-sub" style="color:#D1D5DB;">Scheduled</div>
+          {% endif %}
+        </div>
       </div>
 
       {% elif day.attendance %}
         {% with att=day.attendance %}
         {% if att.status == 'present' %}
-          {% with bg="#D1FAE5" border="#A7F3D0" label_color="#065F46" %}
-          <div style="min-height:80px;border-radius:10px;padding:8px;background:{{ bg }};border:1.5px solid {{ border }};">
-            <div style="font-size:.8rem;font-weight:700;color:var(--text-primary);">{{ day.day }}</div>
-            <div style="font-size:.68rem;font-weight:600;color:{{ label_color }};margin-top:3px;">Present</div>
-            {% if att.time_in %}<div style="font-size:.65rem;color:{{ label_color }};">In: {{ att.time_in|time:"h:i A" }}</div>{% endif %}
-            {% if att.time_out %}<div style="font-size:.65rem;color:{{ label_color }};">Out: {{ att.time_out|time:"h:i A" }}</div>{% endif %}
+        <div class="cal-cell" style="background:#D1FAE5;border-color:#A7F3D0;">
+          <span class="cal-day-name" style="color:#065F46;">{{ day.date|date:"D" }}</span>
+          <div class="cal-day-info">
+            <div class="cal-day-num">{{ day.day }}</div>
+            <div class="cal-label" style="color:#065F46;">Present</div>
+            {% if att.time_in %}<div class="cal-sub" style="color:#065F46;">In: {{ att.time_in|time:"h:i A" }}</div>{% endif %}
+            {% if att.time_out %}<div class="cal-sub" style="color:#065F46;">Out: {{ att.time_out|time:"h:i A" }}</div>{% endif %}
           </div>
-          {% endwith %}
+        </div>
 
         {% elif att.status == 'late' %}
-          {% with bg="#FEF3C7" border="#FDE68A" label_color="#92400E" %}
-          <div style="min-height:80px;border-radius:10px;padding:8px;background:{{ bg }};border:1.5px solid {{ border }};">
-            <div style="font-size:.8rem;font-weight:700;color:var(--text-primary);">{{ day.day }}</div>
-            <div style="font-size:.68rem;font-weight:600;color:{{ label_color }};margin-top:3px;">Late</div>
-            {% if att.time_in %}<div style="font-size:.65rem;color:{{ label_color }};">In: {{ att.time_in|time:"h:i A" }}</div>{% endif %}
-            {% if att.time_out %}<div style="font-size:.65rem;color:{{ label_color }};">Out: {{ att.time_out|time:"h:i A" }}</div>{% endif %}
+        <div class="cal-cell" style="background:#FEF3C7;border-color:#FDE68A;">
+          <span class="cal-day-name" style="color:#92400E;">{{ day.date|date:"D" }}</span>
+          <div class="cal-day-info">
+            <div class="cal-day-num">{{ day.day }}</div>
+            <div class="cal-label" style="color:#92400E;">Late</div>
+            {% if att.time_in %}<div class="cal-sub" style="color:#92400E;">In: {{ att.time_in|time:"h:i A" }}</div>{% endif %}
+            {% if att.time_out %}<div class="cal-sub" style="color:#92400E;">Out: {{ att.time_out|time:"h:i A" }}</div>{% endif %}
           </div>
-          {% endwith %}
+        </div>
 
         {% elif att.status == 'absent' %}
-          {% with bg="#FEE2E2" border="#FECACA" label_color="#991B1B" %}
-          <div style="min-height:80px;border-radius:10px;padding:8px;background:{{ bg }};border:1.5px solid {{ border }};">
-            <div style="font-size:.8rem;font-weight:700;color:var(--text-primary);">{{ day.day }}</div>
-            <div style="font-size:.68rem;font-weight:600;color:{{ label_color }};margin-top:3px;">Absent</div>
-            <div style="font-size:.65rem;color:{{ label_color }};">No clock-in</div>
+        <div class="cal-cell" style="background:#FEE2E2;border-color:#FECACA;">
+          <span class="cal-day-name" style="color:#991B1B;">{{ day.date|date:"D" }}</span>
+          <div class="cal-day-info">
+            <div class="cal-day-num">{{ day.day }}</div>
+            <div class="cal-label" style="color:#991B1B;">Absent</div>
+            <div class="cal-sub" style="color:#991B1B;">No clock-in</div>
           </div>
-          {% endwith %}
+        </div>
 
         {% elif att.status == 'half_day' %}
-          {% with bg="#FEF3C7" border="#FDE68A" label_color="#92400E" %}
-          <div style="min-height:80px;border-radius:10px;padding:8px;background:{{ bg }};border:1.5px solid {{ border }};">
-            <div style="font-size:.8rem;font-weight:700;color:var(--text-primary);">{{ day.day }}</div>
-            <div style="font-size:.68rem;font-weight:600;color:{{ label_color }};margin-top:3px;">Half Day</div>
-            {% if att.time_in %}<div style="font-size:.65rem;color:{{ label_color }};">In: {{ att.time_in|time:"h:i A" }}</div>{% endif %}
+        <div class="cal-cell" style="background:#FEF3C7;border-color:#FDE68A;">
+          <span class="cal-day-name" style="color:#92400E;">{{ day.date|date:"D" }}</span>
+          <div class="cal-day-info">
+            <div class="cal-day-num">{{ day.day }}</div>
+            <div class="cal-label" style="color:#92400E;">Half Day</div>
+            {% if att.time_in %}<div class="cal-sub" style="color:#92400E;">In: {{ att.time_in|time:"h:i A" }}</div>{% endif %}
           </div>
-          {% endwith %}
+        </div>
 
         {% elif att.status == 'overtime' %}
-          {% with bg="#EDE9FE" border="#DDD6FE" label_color="#5B21B6" %}
-          <div style="min-height:80px;border-radius:10px;padding:8px;background:{{ bg }};border:1.5px solid {{ border }};">
-            <div style="font-size:.8rem;font-weight:700;color:var(--text-primary);">{{ day.day }}</div>
-            <div style="font-size:.68rem;font-weight:600;color:{{ label_color }};margin-top:3px;">Overtime</div>
-            {% if att.time_in %}<div style="font-size:.65rem;color:{{ label_color }};">In: {{ att.time_in|time:"h:i A" }}</div>{% endif %}
-            {% if att.time_out %}<div style="font-size:.65rem;color:{{ label_color }};">Out: {{ att.time_out|time:"h:i A" }}</div>{% endif %}
+        <div class="cal-cell" style="background:#EDE9FE;border-color:#DDD6FE;">
+          <span class="cal-day-name" style="color:#5B21B6;">{{ day.date|date:"D" }}</span>
+          <div class="cal-day-info">
+            <div class="cal-day-num">{{ day.day }}</div>
+            <div class="cal-label" style="color:#5B21B6;">Overtime</div>
+            {% if att.time_in %}<div class="cal-sub" style="color:#5B21B6;">In: {{ att.time_in|time:"h:i A" }}</div>{% endif %}
+            {% if att.time_out %}<div class="cal-sub" style="color:#5B21B6;">Out: {{ att.time_out|time:"h:i A" }}</div>{% endif %}
           </div>
-          {% endwith %}
+        </div>
 
         {% else %}
-        <div style="min-height:80px;border-radius:10px;padding:8px;background:#F9FAFB;border:1.5px solid #F3F4F6;">
-          <div style="font-size:.8rem;font-weight:700;">{{ day.day }}</div>
+        <div class="cal-cell" style="background:#F9FAFB;border-color:#F3F4F6;">
+          <span class="cal-day-name">{{ day.date|date:"D" }}</span>
+          <div class="cal-day-info">
+            <div class="cal-day-num">{{ day.day }}</div>
+          </div>
         </div>
         {% endif %}
         {% endwith %}
 
       {% else %}
-      {% if day.before_hired %}
-      <!-- Before hire date — show nothing -->
-      <div style="min-height:80px;border-radius:10px;padding:8px;background:#F9FAFB;border:1.5px solid #F3F4F6;">
-        <div style="font-size:.8rem;font-weight:700;color:#D1D5DB;">{{ day.day }}</div>
-        <div style="font-size:.65rem;color:#E5E7EB;margin-top:4px;">—</div>
-      </div>
-      {% else %}
-      <!-- Past weekday with no record -->
-      <div style="min-height:80px;border-radius:10px;padding:8px;background:#FEE2E2;border:1.5px solid #FECACA;">
-        <div style="font-size:.8rem;font-weight:700;color:var(--text-primary);">{{ day.day }}</div>
-        <div style="font-size:.68rem;font-weight:600;color:#991B1B;margin-top:3px;">Absent</div>
-        <div style="font-size:.65rem;color:#991B1B;">No record</div>
-      </div>
-      {% endif %}
+        {% if day.before_hired %}
+        <div class="cal-cell" style="background:#F9FAFB;border-color:#F3F4F6;">
+          <span class="cal-day-name" style="color:#D1D5DB;">{{ day.date|date:"D" }}</span>
+          <div class="cal-day-info">
+            <div class="cal-day-num" style="color:#D1D5DB;">{{ day.day }}</div>
+            <div class="cal-sub" style="color:#E5E7EB;">—</div>
+          </div>
+        </div>
+        {% else %}
+        <div class="cal-cell" style="background:#FEE2E2;border-color:#FECACA;">
+          <span class="cal-day-name" style="color:#991B1B;">{{ day.date|date:"D" }}</span>
+          <div class="cal-day-info">
+            <div class="cal-day-num">{{ day.day }}</div>
+            <div class="cal-label" style="color:#991B1B;">Absent</div>
+            <div class="cal-sub" style="color:#991B1B;">No record</div>
+          </div>
+        </div>
+        {% endif %}
       {% endif %}
 
-      {% endif %}
       {% endfor %}
     </div>
     {% endfor %}
