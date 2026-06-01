@@ -177,7 +177,9 @@ def setup_security_question(request):
                 defaults = {'question': question, 'answer': answer}
             )
             messages.success(request, "Security question saved successfully.")
-            return redirect('admin_dashboard')
+            if request.user.is_staff or request.user.is_superuser:
+                return redirect('admin_dashboard')
+            return redirect('my_profile')
     else:
         form = SecurityQuestionSetupForm()
 

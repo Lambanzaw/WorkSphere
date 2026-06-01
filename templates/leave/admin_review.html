@@ -85,7 +85,7 @@
           </div>
 
           <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-top:16px;">
-            <button type="button" onclick="showModal('approved')" class="btn btn-success btn-sm">Approve Leave</button>
+            <button type="button" onclick="showModal('approved')" class="btn btn-sm" style="background:#16A34A;color:white;border:none;cursor:pointer;">Approve Leave</button>
             <button type="button" onclick="showModal('rejected')" class="btn btn-danger btn-sm">Reject Leave</button>
             <a href="{% url 'admin_leave_list' %}" class="btn btn-outline btn-sm">Decide Later</a>
           </div>
@@ -180,7 +180,7 @@ function showModal(action) {
     title.textContent    = 'Approve Leave Request?';
     msg.textContent      = '{{ working_days }} day(s) will be deducted from {{ leave.employee.get_full_name }}\'s {{ leave.leave_type.name }} balance. This cannot be undone.';
     btn.textContent      = 'Yes, Approve';
-    btn.style.background = '#22C55E';
+    btn.style.background = '#16A34A';
   } else {
     title.textContent    = 'Reject Leave Request?';
     msg.textContent      = 'This will reject {{ leave.employee.get_full_name }}\'s leave request. The employee will be notified.';

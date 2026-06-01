@@ -242,4 +242,84 @@
   </div>
 </div>
 
+<!-- Security Question Card -->
+<div class="card" style="margin-top:16px;">
+  <div class="card-header">
+    <span class="card-title"> Security Question</span>
+    <button onclick="document.getElementById('securityModal').style.display='flex'" class="btn btn-outline btn-sm">
+      {% if employee.user.security_question %}Update{% else %}Set Up{% endif %}
+    </button>
+  </div>
+  <div class="card-body" style="padding:16px 20px;">
+    {% if employee.user.security_question %}
+      <table class="info-table">
+        <tr>
+          <td>Question</td>
+          <td>{{ employee.user.security_question.get_question_display }}</td>
+        </tr>
+        <tr>
+          <td>Answer</td>
+          <td style="letter-spacing:3px;">••••••••</td>
+        </tr>
+      </table>
+    {% else %}
+      <p style="font-size:.875rem;color:var(--text-muted);">No security question set.
+        <button onclick="document.getElementById('securityModal').style.display='flex'" style="background:none;border:none;color:var(--primary);cursor:pointer;font-size:.875rem;padding:0;text-decoration:underline;">Set one now</button>
+        to enable password recovery.
+      </p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Security Question Modal -->
+<div id="securityModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:12px;padding:28px;max-width:480px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 style="margin:0;font-size:1.1rem;font-weight:700;"> Security Question</h3>
+      <button onclick="document.getElementById('securityModal').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:1.2rem;color:var(--text-muted);">✕</button>
+    </div>
+    <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:20px;line-height:1.6;">Used to verify your identity if you forget your password.</p>
+    <form method="post" action="{% url 'setup_security_question' %}">
+      {% csrf_token %}
+      <div class="form-group" style="margin-bottom:16px;">
+        <label class="form-label" style="font-weight:600;display:block;margin-bottom:6px;">Security Question</label>
+        <select name="question" class="form-control form-select">
+          {% for value, label in security_questions %}
+            <option value="{{ value }}" {% if employee.user.security_question.question == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:24px;">
+        <label class="form-label" style="font-weight:600;display:block;margin-bottom:6px;">Your Answer</label>
+        <input type="text" name="answer" class="form-control">
+      </div>
+      <div id="securityError" style="display:none;color:#DC2626;font-size:.82rem;margin-bottom:12px;padding:8px 12px;background:#FEF2F2;border-radius:8px;border:1px solid #FECACA;"></div>
+      <div style="display:flex;gap:12px;">
+        <button type="button" onclick="submitSecurityForm()" class="btn btn-primary">Save</button>
+        <button type="button" onclick="document.getElementById('securityModal').style.display='none'" class="btn btn-outline">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function submitSecurityForm() {
+  var question = document.querySelector('#securityModal select[name="question"]').value;
+  var answer = document.querySelector('#securityModal input[name="answer"]').value.trim();
+  var errorDiv = document.getElementById('securityError');
+
+  if (!question) {
+    errorDiv.textContent = 'Please select a security question.';
+    errorDiv.style.display = 'block';
+    return;
+  }
+  if (!answer) {
+    errorDiv.textContent = 'Please enter your answer.';
+    errorDiv.style.display = 'block';
+    return;
+  }
+  errorDiv.style.display = 'none';
+  document.querySelector('#securityModal form').submit();
+}
+</script>
 {% endblock %}

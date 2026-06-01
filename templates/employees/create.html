@@ -35,6 +35,16 @@
     margin-top: 4px;
     padding: 16px 0 8px 0;
   }
+  #id_password::-ms-reveal,
+  #id_password::-ms-clear,
+  #id_confirm_password::-ms-reveal,
+  #id_confirm_password::-ms-clear {
+    display: none !important;
+  }
+  #id_password::-webkit-credentials-auto-fill-button,
+  #id_confirm_password::-webkit-credentials-auto-fill-button {
+    display: none !important;
+  }
 </style>
 {% endblock %}
 
@@ -284,5 +294,18 @@ if (phoneInput) {
     phoneError.style.display = 'none';
   });
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+  ['id_password', 'id_confirm_password'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.type = 'text';
+      el.setAttribute('autocomplete', 'new-password');
+      el.setAttribute('data-lpignore', 'true');
+      el.setAttribute('data-form-type', 'other');
+      setTimeout(function() { el.type = 'password'; }, 100);
+    }
+  });
+});
 </script>
 {% endblock %}

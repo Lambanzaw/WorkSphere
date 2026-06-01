@@ -3,7 +3,8 @@
 {% block page_title %}Admin Dashboard{% endblock %}
 
 {% block topbar_actions %}
-<div style="margin-left:auto;">
+<div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+  <button onclick="document.getElementById('adminSecurityModal').style.display='flex'" class="btn btn-outline btn-sm">Security Question</button>
   <a href="{% url 'employee_create' %}" class="btn btn-primary btn-sm">+ Add Employee</a>
 </div>
 {% endblock %}
@@ -133,7 +134,7 @@
     <div class="stat-card-header">
       <span class="stat-card-label">Payrolls This Month</span>
       <div class="stat-icon green">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <span style="font-size:1.1rem;font-weight:700;color:currentColor;">₱</span>
       </div>
     </div>
     <div class="stat-value">{{ payroll_count }}</div>
@@ -249,12 +250,56 @@
     </div>
   </div>
 </div>
+
 {% endif %}
+
+<!-- Admin Security Question Modal -->
+<div id="adminSecurityModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:12px;padding:28px;max-width:480px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 style="margin:0;font-size:1.1rem;font-weight:700;">Security Question</h3>
+      <button onclick="document.getElementById('adminSecurityModal').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:1.2rem;color:var(--text-muted);">✕</button>
+    </div>
+    <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:20px;line-height:1.6;">Used to verify your identity if you forget your password.</p>
+    <form method="post" action="{% url 'setup_security_question' %}">
+      {% csrf_token %}
+      <div class="form-group" style="margin-bottom:16px;">
+        <label class="form-label" style="font-weight:600;display:block;margin-bottom:6px;">Security Question</label>
+        <select name="question" class="form-control form-select">
+          {% for value, label in security_questions %}
+            <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:24px;">
+        <label class="form-label" style="font-weight:600;display:block;margin-bottom:6px;">Your Answer</label>
+        <input type="text" name="answer" class="form-control" placeholder="Your answer">
+      </div>
+      <div id="adminSecurityError" style="display:none;color:#DC2626;font-size:.82rem;margin-bottom:12px;padding:8px 12px;background:#FEF2F2;border-radius:8px;border:1px solid #FECACA;"></div>
+      <div style="display:flex;gap:12px;">
+        <button type="button" onclick="submitAdminSecurityForm()" class="btn btn-primary">Save</button>
+        <button type="button" onclick="document.getElementById('adminSecurityModal').style.display='none'" class="btn btn-outline">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 {% endblock %}
 
 {% block extra_js %}
 <script>
+function submitAdminSecurityForm() {
+  var answer = document.querySelector('#adminSecurityModal input[name="answer"]').value.trim();
+  var errorDiv = document.getElementById('adminSecurityError');
+  if (!answer) {
+    errorDiv.textContent = 'Please enter your answer.';
+    errorDiv.style.display = 'block';
+    return;
+  }
+  errorDiv.style.display = 'none';
+  document.querySelector('#adminSecurityModal form').submit();
+}
+
 document.querySelectorAll('.sw-wrap').forEach(function(wrap) {
   var hint = wrap.previousElementSibling;
   if (hint && hint.classList.contains('sw-hint')) {

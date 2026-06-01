@@ -1,4 +1,4 @@
-"""
+﻿"""
 WorkSphere Models
 PostgreSQL-backed models with strict HR constraints, NOT NULL, UNIQUE, and CHECK constraints.
 All payroll and attendance use database-level integrity via transactions.
@@ -12,7 +12,7 @@ from django.utils import timezone
 import datetime
 
 
-# ─── DEPARTMENT ────────────────────────────────────────────────────────────────
+# â”€â”€â”€ DEPARTMENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class Department(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
@@ -25,7 +25,7 @@ class Department(models.Model):
         return self.name
 
 
-# ─── EMPLOYEE ──────────────────────────────────────────────────────────────────
+# â”€â”€â”€ EMPLOYEE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class Employee(models.Model):
     """
     HR Rule: Only active employees can log in.
@@ -79,7 +79,7 @@ class Employee(models.Model):
         ordering = ['last_name', 'first_name']
 
     def __str__(self):
-        return f"{self.employee_id} — {self.get_full_name()}"
+        return f"{self.employee_id} â€” {self.get_full_name()}"
 
     def get_full_name(self):
         return f"{self.first_name} {self.last_name}"
@@ -89,7 +89,7 @@ class Employee(models.Model):
         return self.status == 'active'
 
 
-# ─── LEAVE TYPE ────────────────────────────────────────────────────────────────
+# â”€â”€â”€ LEAVE TYPE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class LeaveType(models.Model):
     name = models.CharField(max_length=100, unique=True)
     max_days = models.IntegerField(validators=[MinValueValidator(1)])
@@ -99,7 +99,7 @@ class LeaveType(models.Model):
         return self.name
 
 
-# ─── LEAVE BALANCE ─────────────────────────────────────────────────────────────
+# â”€â”€â”€ LEAVE BALANCE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class LeaveBalance(models.Model):
     """Tracks remaining leave days per employee per type per year."""
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
@@ -116,10 +116,10 @@ class LeaveBalance(models.Model):
         return self.allocated_days - self.used_days
 
     def __str__(self):
-        return f"{self.employee} — {self.leave_type} ({self.year}): {self.remaining_days} remaining"
+        return f"{self.employee} â€” {self.leave_type} ({self.year}): {self.remaining_days} remaining"
 
 
-# ─── LEAVE REQUEST ─────────────────────────────────────────────────────────────
+# â”€â”€â”€ LEAVE REQUEST â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class LeaveRequest(models.Model):
     """
     HR Rules enforced:
@@ -157,10 +157,10 @@ class LeaveRequest(models.Model):
         ordering = ['-filed_on']
 
     def __str__(self):
-        return f"{self.employee} — {self.leave_type} ({self.start_date} to {self.end_date})"
+        return f"{self.employee} â€” {self.leave_type} ({self.start_date} to {self.end_date})"
 
     def get_working_days(self):
-        """Count working days (Mon–Fri) in the leave period."""
+        """Count working days (Monâ€“Fri) in the leave period."""
         count = 0
         current = self.start_date
         while current <= self.end_date:
@@ -197,7 +197,7 @@ class LeaveRequest(models.Model):
             raise ValidationError("Leave end date cannot be on a weekend (Saturday or Sunday).")
 
 
-# ─── ATTENDANCE ────────────────────────────────────────────────────────────────
+# â”€â”€â”€ ATTENDANCE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class Attendance(models.Model):
     """
     HR Rules enforced:
@@ -232,7 +232,7 @@ class Attendance(models.Model):
         ordering = ['-date']
 
     def __str__(self):
-        return f"{self.employee} — {self.date} ({self.get_status_display()})"
+        return f"{self.employee} â€” {self.date} ({self.get_status_display()})"
 
     def clean(self):
         """HR Attendance Validation Rules."""
@@ -273,7 +273,7 @@ class Attendance(models.Model):
         return 0
 
 
-# ─── PAYROLL ───────────────────────────────────────────────────────────────────
+# â”€â”€â”€ PAYROLL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class Payroll(models.Model):
     """
     HR Rules enforced:
@@ -291,7 +291,7 @@ class Payroll(models.Model):
     ]
 
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
-    month = models.IntegerField(validators=[MinValueValidator(1)])  # 1–12
+    month = models.IntegerField(validators=[MinValueValidator(1)])  # 1â€“12
     year = models.IntegerField(validators=[MinValueValidator(2000)])
     basic_salary = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
     days_worked = models.IntegerField(default=0)
@@ -334,13 +334,13 @@ class Payroll(models.Model):
         ordering = ['-year', '-month']
 
     def __str__(self):
-        return f"{self.employee} — {self.month}/{self.year} (₱{self.net_salary})"
+        return f"{self.employee} â€” {self.month}/{self.year} (â‚±{self.net_salary})"
 
     def get_month_name(self):
         return datetime.date(self.year, self.month, 1).strftime('%B %Y')
 
 
-# ─── AUDIT LOG ─────────────────────────────────────────────────────────────────
+# â”€â”€â”€ AUDIT LOG â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class AuditLog(models.Model):
     """
     HR Rule: All admin actions must be logged (audit trail).
@@ -369,10 +369,10 @@ class AuditLog(models.Model):
         ordering = ['-timestamp']
 
     def __str__(self):
-        return f"[{self.timestamp:%Y-%m-%d %H:%M}] {self.user} — {self.action} on {self.model_name}"
+        return f"[{self.timestamp:%Y-%m-%d %H:%M}] {self.user} â€” {self.action} on {self.model_name}"
 
 
-# ─── SPECIAL WORKING DAY ──────────────────────────────────────────────────────
+# â”€â”€â”€ SPECIAL WORKING DAY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class SpecialWorkingDay(models.Model):
     """
     HR Rule: No attendance on weekends UNLESS marked as special working day.
@@ -384,16 +384,33 @@ class SpecialWorkingDay(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Special Working Day: {self.date} — {self.reason}"
+        return f"Special Working Day: {self.date} â€” {self.reason}"
 
 class AdminSecurityQuestion(models.Model):
+    QUESTION_CHOICES = [
+        ('pet', "What was the name of your first pet?"),
+        ('school', "What elementary school did you attend?"),
+        ('mother', "What is your mother's maiden name?"),
+        ('city', "In what city were you born?"),
+        ('friend', "What is the name of your childhood best friend?"),
+        ('car', "What was the make of your first car?"),
+        ('street', "What street did you grow up on?"),
+        ('teacher', "What was your favorite teacher's name?"),
+    ]
     user     = models.OneToOneField(User, on_delete=models.CASCADE, related_name='security_question')
-    question = models.CharField(max_length=255)
+    question = models.CharField(max_length=255, choices=QUESTION_CHOICES, default='pet')
     answer   = models.CharField(max_length=255)
 
+    def check_answer(self, answer):
+        return self.answer.lower().strip() == answer.lower().strip()
+
+    def get_question_display_text(self):
+        return dict(self.QUESTION_CHOICES).get(self.question, self.question)
+
     def __str__(self):
-        return f"{self.user.username} — security question"
-    # ─── SPHERE CONVERSATION LOG ──────────────────────────────────────────────────
+        return f"{self.user.username} â€” security question"
+        
+    # â”€â”€â”€ SPHERE CONVERSATION LOG â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class SphereLog(models.Model):
     ROLE_CHOICES = [('admin', 'Admin'), ('employee', 'Employee')]
     LANG_CHOICES = [('en', 'English'), ('tl', 'Tagalog')]
@@ -411,4 +428,6 @@ class SphereLog(models.Model):
         ordering = ['-timestamp']
 
     def __str__(self):
-        return f"{self.user.username} [{self.intent}] — {self.timestamp:%Y-%m-%d %H:%M}"
+        return f"{self.user.username} [{self.intent}] â€” {self.timestamp:%Y-%m-%d %H:%M}"
+
+        return f"{self.user.username} - {self.get_question_display()}"

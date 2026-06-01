@@ -6,6 +6,7 @@ HR Rules: Unique ID/email, active status validation
 """
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db import transaction
@@ -13,7 +14,7 @@ from django.utils import timezone
 from .models import Employee, Department, LeaveBalance, LeaveType, AuditLog
 from .forms import EmployeeCreateForm, EmployeeEditForm, DepartmentForm
 from .decorators import admin_required, employee_required, get_client_ip
-
+from django.shortcuts import render, redirect
 
 # ─── ADMIN DASHBOARD ───────────────────────────────────────────────────────────
 @admin_required
@@ -54,6 +55,8 @@ def admin_dashboard(request):
         'dept_data': dept_data,
         'today': today,
     }
+    from .forms import SECURITY_QUESTIONS
+    context['security_questions'] = SECURITY_QUESTIONS
     return render(request, 'admin_dashboard.html', context)
 
 
@@ -117,10 +120,12 @@ def employee_list(request):
     if dept_filter:
         employees = employees.filter(department_id=dept_filter)
 
-    # Filter by status
+    # Filter by status — hide inactive by default (they go to Archived)
     status_filter = request.GET.get('status', '')
     if status_filter:
         employees = employees.filter(status=status_filter)
+    else:
+        employees = employees.exclude(status='inactive')
 
     departments = Department.objects.all()
     context = {
@@ -251,7 +256,8 @@ def employee_edit(request, pk):
 # ─── OWN PROFILE (EMPLOYEE) ────────────────────────────────────────────────────
 @employee_required
 def my_profile(request):
-    """Employee views their own profile."""
+    if request.user.is_staff or request.user.is_superuser:
+        return redirect('employee_list')
     employee = request.user.employee_profile
     leave_balances = LeaveBalance.objects.filter(
         employee=employee,
@@ -260,7 +266,38 @@ def my_profile(request):
         leave_type__name='Maternity Leave' if employee.gender == 'male' else 'Paternity Leave'
     )
 
+    from .forms import SECURITY_QUESTIONS
     return render(request, 'employees/my_profile.html', {
         'employee': employee,
         'leave_balances': leave_balances,
+        'security_questions': SECURITY_QUESTIONS,
     })
+
+@login_required
+def employee_archive(request, pk):
+    if not (request.user.is_staff or request.user.is_superuser):
+        return redirect('employee_list')
+    employee = get_object_or_404(Employee, pk=pk)
+    if request.method == 'POST':
+        employee.status = 'inactive'
+        employee.save()
+        employee.user.is_active = False
+        employee.user.save()
+        messages.success(request, f'{employee.get_full_name()} has been archived.')
+        return redirect('employee_list')
+    return render(request, 'employees/archive_confirm.html', {'employee': employee})
+
+
+@login_required
+def employee_unarchive(request, pk):
+    if not (request.user.is_staff or request.user.is_superuser):
+        return redirect('employee_list')
+    employee = get_object_or_404(Employee, pk=pk)
+    if request.method == 'POST':
+        employee.status = 'active'
+        employee.save()
+        employee.user.is_active = True
+        employee.user.save()
+        messages.success(request, f'{employee.get_full_name()} has been unarchived.')
+        return redirect('employee_list')
+    return render(request, 'employees/unarchive_confirm.html', {'employee': employee})

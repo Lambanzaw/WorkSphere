@@ -3,6 +3,7 @@
 {% block page_title %}Employees{% endblock %}
 
 {% block topbar_actions %}
+<a href="{% url 'employee_list' %}?status=inactive" class="btn btn-outline btn-sm" style="background:#6B7280;color:white;border:none;">🗃 Archived</a>
 <a href="{% url 'employee_create' %}" class="btn btn-primary btn-sm">+ Add Employee</a>
 {% endblock %}
 
@@ -88,6 +89,9 @@
             <div style="display:flex;gap:6px;">
               <a href="{% url 'employee_detail' emp.pk %}" class="btn btn-outline btn-sm">View</a>
               <a href="{% url 'employee_edit' emp.pk %}" class="btn btn-outline btn-sm">Edit</a>
+              {% if status_filter == 'inactive' %}
+              <button onclick="showUnarchiveModal('{{ emp.pk }}', '{{ emp.get_full_name }}')" class="btn btn-sm" style="background:#16A34A;color:white;border:none;cursor:pointer;">Unarchive</button>
+              {% endif %}
             </div>
           </td>
         </tr>
@@ -97,10 +101,37 @@
             No employees found.
           </td>
         </tr>
-        {% endfor %}
+        {% endfor %}  
       </tbody>
     </table>
   </div>
 </div>
+
+<!-- Unarchive Modal -->
+<div id="unarchiveModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:12px;padding:28px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+    <h3 style="margin:0 0 12px;font-size:1.1rem;">Unarchive Employee</h3>
+    <p id="unarchiveMsg" style="color:var(--text-secondary);margin:0 0 20px;font-size:.9rem;"></p>
+    <p style="color:var(--text-muted);font-size:.82rem;margin:0 0 20px;">This will set their status to Active and restore their login access.</p>
+    <form id="unarchiveForm" method="post">
+      {% csrf_token %}
+      <div style="display:flex;gap:12px;">
+        <button type="submit" class="btn btn-primary">Yes, Unarchive</button>
+        <button type="button" onclick="closeUnarchiveModal()" class="btn btn-outline">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function showUnarchiveModal(pk, name) {
+  document.getElementById('unarchiveMsg').textContent = 'Are you sure you want to unarchive ' + name + '?';
+  document.getElementById('unarchiveForm').action = '/employees/' + pk + '/unarchive/';
+  document.getElementById('unarchiveModal').style.display = 'flex';
+}
+function closeUnarchiveModal() {
+  document.getElementById('unarchiveModal').style.display = 'none';
+}
+</script>
 
 {% endblock %}

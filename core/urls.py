@@ -10,6 +10,10 @@ urlpatterns = [
     # ── Authentication ────────────────────────────────────────────────────────
     path('login/', views_auth.login_view, name='login'),
     path('logout/', views_auth.logout_view, name='logout'),
+    path('forgot-password/', views_auth.forgot_password_email, name='forgot_password_email'),
+    path('forgot-password/verify/', views_auth.forgot_password_verify, name='forgot_password_verify'),
+    path('reset-password/', views_auth.reset_password, name='reset_password'),
+    path('setup-security-question/', views_auth.setup_security_question, name='setup_security_question'),
     path('dashboard/', views_auth.dashboard_redirect, name='dashboard'),
 
     path('forgot-password/',        views_auth.forgot_password_email,   name='forgot_password_email'),
@@ -26,6 +30,8 @@ urlpatterns = [
     path('employees/create/', views_employee.employee_create, name='employee_create'),
     path('employees/<int:pk>/', views_employee.employee_detail, name='employee_detail'),
     path('employees/<int:pk>/edit/', views_employee.employee_edit, name='employee_edit'),
+    path('employees/<int:pk>/archive/', views_employee.employee_archive, name='employee_archive'),
+    path('employees/<int:pk>/unarchive/', views_employee.employee_unarchive, name='employee_unarchive'),
 
     # ── Employee Self-Service ─────────────────────────────────────────────────
     path('my-profile/', views_employee.my_profile, name='my_profile'),
