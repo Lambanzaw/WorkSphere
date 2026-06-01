@@ -3,7 +3,14 @@
   {% block page_title %}Payroll Records{% endblock %}
 
   {% block topbar_actions %}
-  <div style="display:flex;gap:8px;margin-left:auto;">
+  <div style="display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;">
+    <a href="{% url 'payroll_export_csv' %}?month={{ selected_month }}&year={{ selected_year }}&q={{ search_query }}&status={{ selected_status }}"
+       class="btn btn-outline btn-sm">
+      Export CSV
+    </a>
+    <button onclick="printPayrollReport()" class="btn btn-outline btn-sm">
+      Print PDF
+    </button>
     <button onclick="openGenerateAllModal()" class="btn btn-outline btn-sm">
       Generate All
     </button>
@@ -92,10 +99,11 @@
             <option value="{{ y }}" {% if selected_year == y|stringformat:"s" %}selected{% endif %}>{{ y }}</option>
           {% endfor %}
         </select>
-        <select name="status" style="padding:.6rem .9rem;border:1px solid var(--border-light);border-radius:10px;font-size:.875rem;background:white;outline:none;">
-          <option value="">All Status</option>
-          <option value="draft" {% if selected_status == 'draft' %}selected{% endif %}>Draft</option>
-          <option value="finalized" {% if selected_status == 'finalized' %}selected{% endif %}>Finalized</option>
+        <select name="department" style="padding:.6rem .9rem;border:1px solid var(--border-light);border-radius:10px;font-size:.875rem;background:white;outline:none;">
+          <option value="">All Departments</option>
+          {% for d in departments %}
+          <option value="{{ d.pk }}" {% if dept_filter == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
+          {% endfor %}
         </select>
         <button type="submit" style="padding:.6rem 1.2rem;background:var(--primary);color:white;border:none;border-radius:10px;font-weight:600;font-size:.875rem;cursor:pointer;">Filter</button>
         <a href="{% url 'payroll_list' %}" style="padding:.6rem 1rem;background:white;color:var(--text-secondary);border:1px solid var(--border-light);border-radius:10px;font-size:.875rem;text-decoration:none;">Clear</a>
@@ -155,11 +163,12 @@
             View
           </a>
           {% if p.status == 'draft' %}
-          <a href="{% url 'payroll_finalize' p.pk %}" style="display:inline-flex;align-items:center;background:var(--primary);color:white;padding:.45rem .9rem;border-radius:8px;font-size:.82rem;font-weight:600;text-decoration:none;white-space:nowrap;transition:all .2s;"
+          <button onclick="openFinalizeModal({{ p.pk }}, '{{ p.employee.get_full_name }}', '{{ p.get_month_name }}', '{{ p.employee.employee_id }}', '{{ p.gross_salary|floatformat:2 }}', '{{ p.total_deductions|floatformat:2 }}', '{{ p.net_salary|floatformat:2 }}')"
+            style="display:inline-flex;align-items:center;background:var(--primary);color:white;padding:.45rem .9rem;border-radius:8px;font-size:.82rem;font-weight:600;border:none;cursor:pointer;white-space:nowrap;transition:all .2s;"
             onmouseenter="this.style.opacity='.85';"
             onmouseleave="this.style.opacity='1';">
             Finalize
-          </a>
+          </button>
           {% endif %}
         </div>
       </div>
@@ -223,6 +232,71 @@
 
   {% block extra_js %}
   <script>
+    function printPayrollReport() {
+    var month = '{{ month }}';
+    var year = '{{ year }}';
+    var monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
+
+    // Build table rows from Django template
+    var tableRows = `{% for p in payrolls %}<tr>
+      <td>{{ p.employee.get_full_name }}</td>
+      <td>{{ p.employee.department.name|default:"—" }}</td>
+      <td>{{ p.employee.position }}</td>
+      <td style="text-align:right;">&#8369;{{ p.basic_salary|floatformat:2 }}</td>
+      <td style="text-align:right;color:#EF4444;">&#8369;{{ p.total_deductions|floatformat:2 }}</td>
+      <td style="text-align:right;font-weight:700;color:#4F46E5;">&#8369;{{ p.net_salary|floatformat:2 }}</td>
+      <td>{{ p.days_worked }}</td>
+      <td>{% if p.status == 'draft' %}Draft{% else %}Finalized{% endif %}</td>
+    </tr>{% endfor %}`;
+
+    var now = new Date().toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
+
+    var content = `<html><head><title>Payroll Report - ${monthName} ${year}</title>
+    <style>
+      body { font-family: Arial, sans-serif; font-size: 11px; margin: 0; padding: 20px; }
+      .header { background: #1F2937; color: white; padding: 16px 20px; display: flex; justify-content: space-between; margin-bottom: 0; }
+      .header h1 { margin: 0; font-size: 16px; }
+      .header p { margin: 4px 0 0; font-size: 11px; opacity: .7; }
+      .subheader { background: #F9FAFB; border-bottom: 2px solid #E5E7EB; padding: 6px 20px; display: flex; justify-content: space-between; font-size: 10px; color: #6B7280; margin-bottom: 16px; }
+      table { width: 100%; border-collapse: collapse; }
+      th { background: #374151; color: white; padding: 7px 10px; text-align: left; font-size: 10px; text-transform: uppercase; }
+      td { padding: 6px 10px; border-bottom: 1px solid #F3F4F6; }
+      tr:nth-child(even) td { background: #F9FAFB; }
+      .footer { margin-top: 20px; font-size: 10px; color: #9CA3AF; text-align: center; border-top: 1px solid #E5E7EB; padding-top: 10px; }
+      @page { size: A4 landscape; margin: 1cm; }
+    </style></head><body>
+    <div class="header">
+      <div><h1>WorkSphere HR Management</h1><p>Payroll Report</p></div>
+      <div style="text-align:right;"><strong>${monthName} ${year}</strong></div>
+    </div>
+    <div class="subheader"><span>Generated: ${now}</span><span>CONFIDENTIAL — For Internal Use Only</span></div>
+    <table>
+      <thead><tr>
+        <th>Employee</th><th>Department</th><th>Position</th>
+        <th style="text-align:right;">Basic</th>
+        <th style="text-align:right;">Deductions</th>
+        <th style="text-align:right;">Net Pay</th>
+        <th>Days</th><th>Status</th>
+      </tr></thead>
+      <tbody>${tableRows}</tbody>
+    </table>
+    <div class="footer">WorkSphere HRMS — Confidential &nbsp;|&nbsp; Printed: ${now}</div>
+    </body></html>`;
+
+    // Create hidden iframe for printing — no new tab, no visible background
+    var printFrame = document.getElementById('spherePrintFrame');
+    if (printFrame) printFrame.remove();
+    printFrame = document.createElement('iframe');
+    printFrame.id = 'spherePrintFrame';
+    printFrame.style.cssText = 'position:absolute;width:0;height:0;border:none;visibility:hidden;';
+    document.body.appendChild(printFrame);
+    printFrame.srcdoc = content;
+    printFrame.onload = function() {
+      printFrame.contentWindow.focus();
+      printFrame.contentWindow.print();
+    };
+  }
+
   function openGenerateAllModal() {
     document.getElementById('generateAllModal').style.display = 'flex';
   }
@@ -233,4 +307,106 @@
     if (e.key === 'Escape') closeGenerateAllModal();
   });
   </script>
+
+  <!-- Finalize Payroll Modal -->
+<div id="finalizeModal" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,0.45);" onclick="closeFinalizeModal()"></div>
+  <div style="position:relative;background:white;border-radius:16px;padding:28px 32px;width:100%;max-width:480px;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+
+    <div style="background:#FEF3C7;border:1px solid #FCD34D;border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.25rem;display:flex;gap:.75rem;">
+      <span style="font-size:1.2rem;"></span>
+      <div>
+        <div style="font-weight:700;color:#92400E;font-size:.9rem;margin-bottom:.2rem;">Warning: Permanent Action</div>
+        <div style="font-size:.85rem;color:#92400E;">Finalizing will <strong>lock this record permanently</strong>. No further edits allowed.</div>
+      </div>
+    </div>
+
+    <div style="background:#F9FAFB;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1.25rem;">
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;">
+        <div id="fm-initials" style="width:40px;height:40px;border-radius:10px;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;font-size:.9rem;"></div>
+        <div>
+          <div id="fm-name" style="font-weight:700;"></div>
+          <div id="fm-period" style="font-size:.82rem;color:var(--text-muted);"></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+        <div style="background:white;border-radius:8px;padding:.75rem;">
+          <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:.2rem;">Gross Pay</div>
+          <div id="fm-gross" style="font-weight:700;color:#16A34A;"></div>
+        </div>
+        <div style="background:white;border-radius:8px;padding:.75rem;">
+          <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:.2rem;">Deductions</div>
+          <div id="fm-deductions" style="font-weight:700;color:#EF4444;"></div>
+        </div>
+      </div>
+      <div style="background:var(--primary);border-radius:10px;padding:.875rem 1rem;margin-top:.75rem;display:flex;justify-content:space-between;align-items:center;">
+        <span style="color:white;font-size:.85rem;opacity:.85;">Net Pay</span>
+        <span id="fm-net" style="color:white;font-weight:800;font-size:1.2rem;"></span>
+      </div>
+    </div>
+
+    <form id="finalizeForm" method="post" style="display:flex;gap:.75rem;">
+      {% csrf_token %}
+      <button type="submit" style="flex:1;padding:.8rem;background:var(--primary);color:white;border:none;cursor:pointer;border-radius:10px;font-weight:700;font-size:.95rem;">
+        ✓ Finalize Payroll
+      </button>
+      <button type="button" onclick="closeFinalizeModal()" style="flex:1;padding:.8rem;background:white;color:var(--text-secondary);border:1px solid var(--border-light);border-radius:10px;font-weight:600;font-size:.95rem;cursor:pointer;">
+        Cancel
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Auto-open finalize modal if URL has ?finalize=pk
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  var pk = params.get('finalize');
+  if (!pk) return;
+  setTimeout(function() {
+    document.querySelectorAll('button[onclick]').forEach(function(btn) {
+      var attr = btn.getAttribute('onclick');
+      if (attr && attr.startsWith('openFinalizeModal(' + pk + ',')) {
+        // Extract args from onclick and call directly — do NOT click the button
+        try {
+          var match = attr.match(/openFinalizeModal\((.+)\)/);
+          if (match) {
+            var args = match[1].split(/,\s*(?=')/);
+            var cleanArgs = args.map(function(a) {
+              return a.trim().replace(/^'|'$/g, '');
+            });
+            openFinalizeModal(
+              parseInt(cleanArgs[0]),
+              cleanArgs[1],
+              cleanArgs[2],
+              cleanArgs[3],
+              cleanArgs[4],
+              cleanArgs[5],
+              cleanArgs[6]
+            );
+          }
+        } catch(e) {}
+      }
+    });
+  }, 600);
+})();
+function openFinalizeModal(pk, name, period, empId, gross, deductions, net) {
+  var words = name.trim().split(' ');
+  var initials = words.length >= 2 ? words[0][0] + words[words.length-1][0] : name.slice(0,2);
+  document.getElementById('fm-initials').textContent = initials.toUpperCase();
+  document.getElementById('fm-name').textContent = name;
+  document.getElementById('fm-period').textContent = period + ' · ' + empId;
+  document.getElementById('fm-gross').textContent = '₱' + gross;
+  document.getElementById('fm-deductions').textContent = '₱' + deductions;
+  document.getElementById('fm-net').textContent = '₱' + net;
+  document.getElementById('finalizeForm').action = '/payroll/' + pk + '/finalize/';
+  document.getElementById('finalizeModal').style.display = 'flex';
+}
+function closeFinalizeModal() {
+  document.getElementById('finalizeModal').style.display = 'none';
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeFinalizeModal();
+});
+</script>
   {% endblock %}

@@ -314,6 +314,8 @@ def payroll_list(request):
         'employee', 'employee__department'
     ).filter(month=month, year=year).order_by('employee__last_name')
 
+    dept_filter = request.GET.get('department', '')
+
     if emp_filter:
         payrolls = payrolls.filter(employee_id=emp_filter)
     if search_query:
@@ -321,16 +323,25 @@ def payroll_list(request):
             employee__first_name__icontains=search_query
         ) | payrolls.filter(
             employee__last_name__icontains=search_query
+        ) | payrolls.filter(
+            employee__employee_id__icontains=search_query
+        ) | payrolls.filter(
+            employee__email__icontains=search_query
         )
+        payrolls = payrolls.filter(month=month, year=year)
+    if dept_filter:
+        payrolls = payrolls.filter(employee__department_id=dept_filter)
     if status_filter:
         payrolls = payrolls.filter(status=status_filter)
 
+    from .models import Department
     all_payrolls    = Payroll.objects.all()
     month_total     = sum(p.net_salary for p in payrolls)
     total_count     = all_payrolls.count()
     draft_count     = payrolls.filter(status='draft').count()
     finalized_count = payrolls.filter(status='finalized').count()
     employees       = Employee.objects.filter(status='active').order_by('last_name')
+    departments     = Department.objects.all()
 
     context = {
         'payrolls':        payrolls,
@@ -344,13 +355,16 @@ def payroll_list(request):
         'finalized_count': finalized_count,
         'emp_filter':      emp_filter,
         'search_query':    search_query,
+        'dept_filter':     dept_filter,
         'selected_month':  selected_month,
         'selected_year':   selected_year,
         'selected_status': selected_status,
         'employees':       employees,
+        'departments':     departments,
         'months':          [(i, datetime.date(2000, i, 1).strftime('%B')) for i in range(1, 13)],
         'years':           range(today.year - 2, today.year + 1),
     }
+    
     return render(request, 'payroll/list.html', context)
 
 
@@ -408,3 +422,75 @@ def my_payslip_detail(request, pk):
         return redirect('my_payslips')
 
     return render(request, 'payroll/payslip.html', {'payroll': payroll, 'is_employee_view': True})
+
+
+import csv
+from django.http import HttpResponse
+
+@admin_required
+def payroll_export_csv(request):
+    """Export payroll records as CSV with active filters applied."""
+    today         = timezone.now().date()
+    month         = int(request.GET.get('month', today.month))
+    year          = int(request.GET.get('year', today.year))
+    search_query  = request.GET.get('q', '')
+    status_filter = request.GET.get('status', '')
+
+    payrolls = Payroll.objects.select_related(
+        'employee', 'employee__department'
+    ).filter(month=month, year=year).order_by('employee__last_name')
+
+    if search_query:
+        payrolls = payrolls.filter(
+            employee__first_name__icontains=search_query
+        ) | payrolls.filter(
+            employee__last_name__icontains=search_query
+        )
+    if status_filter:
+        payrolls = payrolls.filter(status=status_filter)
+
+    month_name = datetime.date(year, month, 1).strftime('%B')
+    filename   = f"payroll_{month_name}_{year}.csv"
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    writer = csv.writer(response)
+    writer.writerow([
+        'Employee ID', 'Full Name', 'Department', 'Position',
+        'Basic Salary', 'Days Worked', 'Days Absent', 'Late Minutes',
+        'Overtime Hours', 'Overtime Pay', 'Bonuses',
+        'Absence Deduction', 'Late Deduction',
+        'SSS', 'PhilHealth', 'Pag-IBIG', 'Withholding Tax',
+        'Other Deductions', 'Total Deductions',
+        'Gross Salary', 'Net Salary', 'Status', 'Period'
+    ])
+
+    for p in payrolls:
+        writer.writerow([
+            p.employee.employee_id,
+            p.employee.get_full_name(),
+            p.employee.department.name if p.employee.department else '',
+            p.employee.position,
+            p.basic_salary,
+            p.days_worked,
+            p.days_absent,
+            p.late_minutes,
+            p.overtime_hours,
+            p.overtime_pay,
+            p.bonuses,
+            p.absence_deduction,
+            p.late_deduction,
+            p.sss_contribution,
+            p.philhealth_contribution,
+            p.pagibig_contribution,
+            p.withholding_tax,
+            p.other_deductions,
+            p.total_deductions,
+            p.gross_salary,
+            p.net_salary,
+            p.status.title(),
+            p.get_month_name(),
+        ])
+
+    return response

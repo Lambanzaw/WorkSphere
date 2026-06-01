@@ -6,7 +6,7 @@ import datetime
 import calendar
 import pytz
 
-from .models import Attendance, Employee, SpecialWorkingDay, AuditLog, LeaveRequest
+from .models import Attendance, Employee, SpecialWorkingDay, AuditLog, LeaveRequest, Department
 from .forms import AttendanceClockInForm, AttendanceClockOutForm, AttendanceAdminForm
 from .decorators import admin_required, employee_required, get_client_ip
 
@@ -240,26 +240,58 @@ def admin_attendance_list(request):
     if yesterday.weekday() < 5:
         auto_mark_absent_for_date(yesterday)
 
-    date_filter = request.GET.get('date', str(today))
-    emp_filter  = request.GET.get('employee', '')
+    date_filter   = request.GET.get('date', str(today))
+    emp_filter    = request.GET.get('employee', '')
+    search        = request.GET.get('search', '').strip()
+    dept_filter   = request.GET.get('department', '')
+    status_filter = request.GET.get('status', '')
 
     records = Attendance.objects.select_related(
         'employee', 'employee__department'
     ).order_by('-date', 'employee')
 
+    # Filter by date
     if date_filter:
         records = records.filter(date=date_filter)
+
+    # Filter by specific employee dropdown
     if emp_filter:
         records = records.filter(employee_id=emp_filter)
 
-    employees = Employee.objects.filter(status='active').order_by('last_name')
+    # Search by name, ID, or email
+    if search:
+        records = records.filter(
+            employee__first_name__icontains=search
+        ) | records.filter(
+            employee__last_name__icontains=search
+        ) | records.filter(
+            employee__employee_id__icontains=search
+        ) | records.filter(
+            employee__email__icontains=search
+        )
+        if date_filter:
+            records = records.filter(date=date_filter)
 
+    # Filter by department
+    if dept_filter:
+        records = records.filter(employee__department_id=dept_filter)
+
+    # Filter by attendance status
+    if status_filter:
+        records = records.filter(status=status_filter)
+
+    employees   = Employee.objects.filter(status='active').order_by('last_name')
+    departments = Department.objects.all()
     context = {
-        'records':     records,
-        'today':       today,
-        'date_filter': date_filter,
-        'emp_filter':  emp_filter,
-        'employees':   employees,
+        'records':       records,
+        'today':         today,
+        'date_filter':   date_filter,
+        'emp_filter':    emp_filter,
+        'search':        search,
+        'dept_filter':   dept_filter,
+        'status_filter': status_filter,
+        'employees':     employees,
+        'departments':   departments,
     }
     return render(request, 'attendance/admin_list.html', context)
 

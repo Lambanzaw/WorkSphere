@@ -1,4 +1,5 @@
 import json
+import re
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
@@ -14,21 +15,6 @@ from .models import (
 
 # Anthropic Client
 client = anthropic.Anthropic(api_key=os.environ.get('ANTHROPIC_API_KEY'))
-
-NAV_URLS = {
-    'NAV_DASHBOARD':     {'admin': '/admin-dashboard/', 'employee': '/employee/dashboard/'},
-    'NAV_ATTENDANCE':    {'admin': '/attendance/',      'employee': '/my-attendance/'},
-    'NAV_LEAVE':         {'admin': '/leave/',           'employee': '/my-leaves/'},
-    'NAV_PAYROLL':       {'admin': '/payroll/',         'employee': '/my-payslips/'},
-    'NAV_PROFILE':       {'admin': '/employees/',       'employee': '/my-profile/'},
-    'NAV_EMPLOYEES':     {'admin': '/employees/',       'employee': None},
-    'NAV_REPORTS':       {'admin': '/reports/',         'employee': None},
-    'NAV_SCHEDULE':      {'admin': None,                'employee': '/my-schedule/'},
-    'NAV_CLOCK_IN':      {'admin': '/attendance/clock-in/',  'employee': '/attendance/clock-in/'},
-    'NAV_CLOCK_OUT':     {'admin': '/attendance/clock-out/', 'employee': '/attendance/clock-out/'},
-    'NAV_ADD_EMPLOYEE':  {'admin': '/employees/create/', 'employee': None},
-    'NAV_LOGOUT':        {'admin': '/logout/', 'employee': '/logout/'},
-}
 
 
 def get_hr_context(user):
@@ -265,11 +251,183 @@ def normalize_numbers(text):
     return result
 
 
+def _match_employee(text_lower):
+    """Helper: find active employee whose name appears in text."""
+    for emp in Employee.objects.filter(status='active'):
+        fn = emp.get_full_name().lower()
+        f = emp.first_name.lower()
+        l = emp.last_name.lower()
+        if fn in text_lower or (f in text_lower and l in text_lower) or l in text_lower:
+            return emp
+    return None
+
+
+def _extract_payroll_fields(text_lower):
+    """Helper: extract payroll form fields from voice text."""
+    fields = {}
+    emp = _match_employee(text_lower)
+    if emp:
+        fields['employee'] = str(emp.pk)
+
+    months_map = {
+        'january': '1', 'february': '2', 'march': '3', 'april': '4',
+        'may': '5', 'june': '6', 'july': '7', 'august': '8',
+        'september': '9', 'october': '10', 'november': '11', 'december': '12'
+    }
+    for mn, mv in months_map.items():
+        if mn in text_lower:
+            fields['month'] = mv
+            break
+
+    ym = re.search(r'\b(20\d{2})\b', text_lower)
+    if ym:
+        fields['year'] = ym.group(1)
+
+    bm = re.search(r'bonus(?:es)?\s+(?:of\s+)?(\d+[\d,]*)', text_lower)
+    if bm:
+        fields['bonuses'] = bm.group(1).replace(',', '')
+
+    tm = re.search(r'tax\s+(?:of\s+)?(\d+[\d,]*)', text_lower)
+    if tm:
+        fields['withholding_tax'] = tm.group(1).replace(',', '')
+
+    dm = re.search(r'deduction(?:s)?\s+(?:of\s+)?(\d+[\d,]*)', text_lower)
+    if dm:
+        fields['other_deductions'] = dm.group(1).replace(',', '')
+
+    return fields
+
+
 def ask_claude(user_message, user, is_admin, form_state=None, current_url=''):
     user_message = normalize_numbers(user_message)
     hr_context = get_hr_context(user)
     role = "HR Administrator" if is_admin else "Employee"
 
+    # ── Direct intercepts before calling Claude ────────────────────────────────
+    if is_admin:
+        _t = user_message.lower()
+
+        # Intercept 1: Payroll form commands — stay in payroll module
+        _on_payroll = '/payroll/generate' in current_url
+        _is_payroll_cmd = any(w in _t for w in [
+            'generate payroll', 'payroll for', 'create payroll',
+            'add payroll', 'payroll of', 'compute payroll'
+        ])
+        _is_payroll_field = _on_payroll and any(w in _t for w in [
+            'select', 'set', 'choose', 'pick', 'employee',
+            'month', 'year', 'bonus', 'tax', 'deduction', 'notes'
+        ])
+        if _is_payroll_cmd or _is_payroll_field:
+            _fields = _extract_payroll_fields(_t)
+            _nav = '/payroll/generate/' if _is_payroll_cmd and not _on_payroll else None
+            _emp = _match_employee(_t)
+            _ename = f' for {_emp.get_full_name()}' if _emp else ''
+            # Always navigate even if no fields extracted
+            return (
+                f'Opening payroll form{_ename}. Fill in the details and click Preview Payroll.',
+                'FORM_FILL', _nav,
+                {'form': 'generate_payroll', 'fields': _fields} if _fields else None,
+                None, None, None, None
+            )
+
+        # Intercept 2: Leave review — direct to pending leave review page
+        _is_leave = any(w in _t for w in [
+            'leave request', 'pending leave', 'leaving request', 'leave'
+        ])
+        _is_review = any(w in _t for w in [
+            'review', 'approve', 'reject', 'pending', 'check'
+        ])
+        _is_filter = any(w in _t for w in [
+            'search', 'filter', 'find', 'show', 'clear', 'department', 'status'
+        ])
+        if _is_leave and _is_review and not _is_filter:
+            _emp = _match_employee(_t)
+            if _emp:
+                _pl = LeaveRequest.objects.filter(
+                    employee=_emp, status='pending'
+                ).order_by('-filed_on').first()
+                if _pl:
+                    return (
+                        f"Opening {_emp.get_full_name()}'s pending leave request.",
+                        'NAV_LEAVE', f'/leave/{_pl.pk}/review/',
+                        None, None, None, None, None
+                    )
+                else:
+                    return (
+                        f"{_emp.get_full_name()} has no pending leave requests.",
+                        'NAV_LEAVE', f'/leave/?employee={_emp.pk}&status=all',
+                        None, None, None, None, None
+                    )
+
+        # Intercept 3: Finalize payroll — open modal on current page
+        _is_finalize = any(w in _t for w in ['finalize payroll', 'finalize this', 'click finalize'])
+        if _is_finalize and '/payroll/' in current_url:
+            return (
+                'Opening finalize confirmation.',
+                'SUBMIT', None,
+                None, 'finalize_payroll', None, None, None
+            )
+        # Intercept 4: Filter commands — never navigate, just filter
+        _is_filter_cmd = any(w in _t for w in [
+            'search', 'filter', 'find', 'clear filter', 'clear search',
+            'show all', 'show only', 'filter by'
+        ])
+        if _is_filter_cmd and not _is_payroll_cmd:
+            _filter = {}
+            # Extract search term — anything after "search" or "find"
+            _sm = re.search(r'(?:search|find)\s+(.+)', _t)
+            if _sm:
+                _filter['search'] = _sm.group(1).strip()
+            # Extract department
+            _dm = re.search(r'(?:department|dept)\s+(?:is\s+)?(\w+)', _t)
+            if _dm:
+                _filter['department'] = _dm.group(1)
+            # Extract status
+            for _st in ['active', 'inactive', 'present', 'absent', 'late', 'draft', 'finalized', 'pending', 'approved', 'rejected']:
+                if _st in _t:
+                    _filter['status'] = _st
+                    break
+            # Clear command
+            if 'clear' in _t:
+                _filter['clear'] = 'true'
+            if _filter:
+                return (
+                    f'Filtering records.',
+                    'UNKNOWN', None, None, None, None, None, _filter
+                )
+
+        # Intercept: Click finalize for employee — go to payroll list with modal
+        _is_finalize = any(w in _t for w in [
+            'finalize', 'finalize payroll', 'click finalize', 'finalize for'
+        ])
+        if _is_finalize:
+            _emp = _match_employee(_t)
+            if _emp:
+                _draft = Payroll.objects.filter(
+                    employee=_emp, status='draft'
+                ).order_by('-year', '-month').first()
+                if _draft:
+                    return (
+                        f"Opening finalize for {_emp.get_full_name()}.",
+                        'NAV_PAYROLL',
+                        f'/payroll/?finalize={_draft.pk}',
+                        None, None, None, None, None
+                    )
+                else:
+                    return (
+                        f"{_emp.get_full_name()} has no draft payroll.",
+                        'NAV_PAYROLL', '/payroll/',
+                        None, None, None, None, None
+                    )
+            elif not _emp and _is_finalize and '/payroll/' not in current_url:
+                return (
+                    'Opening payroll list.',
+                    'NAV_PAYROLL', '/payroll/',
+                    None, None, None, None, None
+                )
+        
+
+    # ── Build form context ─────────────────────────────────────────────────────
     form_context = ""
     if form_state:
         form_context = (
@@ -323,88 +481,39 @@ def ask_claude(user_message, user, is_admin, form_state=None, current_url=''):
         "Respond with: FILL:form_name|field1=value1|field2=value2\n\n"
         "LEAVE REQUEST (leave_request): leave_type, start_date (YYYY-MM-DD), end_date (YYYY-MM-DD), reason\n"
         "ADD EMPLOYEE (add_employee): username, employee_id, password, first_name, last_name, gender (male/female), date_of_birth (YYYY-MM-DD), civil_status (single/married/widowed/separated/divorced), nationality, email, contact_number, address, department, position, date_hired (YYYY-MM-DD), basic_salary\n"
-        "EDIT EMPLOYEE (add_employee): same fields as ADD EMPLOYEE — use form_name 'add_employee' for edit form too\n"
-        "When user is editing an employee, fill fields using FILL:add_employee|field=value\n\n"
-        "SUBMIT FORM: When user says 'submit', 'save', 'create employee', 'done', 'click create employee', 'create', 'add employee', 'finish', 'complete', 'click submit', 'click save', 'click create', 'save changes', 'update employee', 'click save changes', 'save employee', 'update' — respond with:\n"
-        "SUBMIT:add_employee\n"
-        "CANCEL FORM: When user says 'cancel', 'go back', 'back', 'click cancel' — respond with:\n"
-        "CANCEL:add_employee\n\n"
-        "This will click the submit button on the current form.\n\n"
-        "GENERATE PAYROLL (generate_payroll): month (1-12), year\n"
-        "ATTENDANCE OVERRIDE (attendance_override): employee, date, time_in (HH:MM), time_out (HH:MM), status\n\n"
+        "EDIT EMPLOYEE (add_employee): same fields as ADD EMPLOYEE — use form_name 'add_employee' for edit form too\n\n"
+        "SUBMIT FORM: When user says 'submit', 'save', 'create employee', 'done', 'finish', 'complete', 'click submit', 'click save', 'save changes', 'update' — respond with: SUBMIT:add_employee\n"
+        "PREVIEW PAYROLL: When user says 'click preview payroll', 'preview payroll', 'generate now', 'submit payroll', 'click preview' — respond with: SUBMIT:preview_payroll\n"
+        "FINALIZE PAYROLL: When user says 'finalize payroll', 'click finalize', 'finalize this payroll' — respond with: SUBMIT:finalize_payroll\n"
+        "APPROVE LEAVE: When user says 'approve leave', 'click approve', 'approve this leave' — respond with: SUBMIT:approve_leave\n"
+        "REJECT LEAVE: When user says 'reject leave', 'click reject', 'reject this leave' — respond with: SUBMIT:reject_leave\n"
+        "LEAVE REMARKS: When user says 'remarks is X', 'add remarks X', 'notes is X' — respond with: FILL:leave_review|remarks=X\n"
+        "CANCEL FORM: When user says 'cancel', 'go back', 'back' — respond with: CANCEL:add_employee\n\n"
+        "GENERATE PAYROLL (generate_payroll): employee (PK), month (1-12), year, bonuses, withholding_tax, other_deductions, notes\n"
+        "NEVER navigate to /employees/ for payroll commands.\n\n"
+        "ATTENDANCE OVERRIDE (attendance_override): employee, date, time_in (HH:MM), time_out (HH:MM), status\n"
+        "LEAVE REVIEW (leave_review): remarks\n\n"
         "EXAMPLES:\n"
         "User: 'File a sick leave July 1 to July 3, fever'\n"
         f"{leave_example}\n\n"
         "User: 'Add employee John Dela Cruz, IT, developer, 25000'\n"
         "NAVIGATE:/employees/create/|Opening add employee form.\n"
         "FILL:add_employee|first_name=John|last_name=Dela Cruz|position=Developer|department=IT|basic_salary=25000\n\n"
-        "User: 'View employees' or 'View all employees'\n"
-        "NAVIGATE:/employees/|Opening employee list...\n\n"
-        "User: 'View an employee'\n"
-        "NAVIGATE:/employees/|Opening employee list. Click on an employee to view their details.\n\n"
-        "User: 'View Andrei Patdu'\n"
-        "NAVIGATE:/employees/|Opening employee list. Find Andrei Patdu and click View.\n\n"
-        "User: 'View John Paul Alvior'\n"
-        "NAVIGATE:/employees/|Opening employee list. Find John Paul Alvior and click View.\n\n"
-        f"User: 'View all leave requests'\n"
-        f"NAVIGATE:{leave_url}?status=all|Opening all leave requests...\n\n"
-        f"User: 'View all pending leave'\n"
-        f"NAVIGATE:{leave_url}?status=pending|Opening pending leave requests...\n\n"
-        f"User: 'View all approved leave'\n"
-        f"NAVIGATE:{leave_url}?status=approved|Opening approved leave requests...\n\n"
-        f"User: 'View all rejected leave'\n"
-        f"NAVIGATE:{leave_url}?status=rejected|Opening rejected leave requests...\n\n"
-        f"User: 'View all cancelled leave'\n"
-        f"NAVIGATE:{leave_url}?status=cancelled|Opening cancelled leave requests...\n\n"
+        "User: 'View employees'\nNAVIGATE:/employees/|Opening employee list...\n\n"
+        f"User: 'View all leave requests'\nNAVIGATE:{leave_url}?status=all|Opening all leave requests...\n\n"
+        f"User: 'View all pending leave'\nNAVIGATE:{leave_url}?status=pending|Opening pending leave requests...\n\n"
         "=== IMPORTANT FILL RULES ===\n"
-        "- When user says 'add employee' or 'new employee' — start guided flow one field at a time\n"
+        "- When user says 'add employee' — start guided flow one field at a time\n"
         "- Field order: username -> employee_id -> password -> first_name -> last_name -> gender -> date_of_birth -> civil_status -> nationality -> email -> contact_number -> address -> department -> position -> date_hired -> basic_salary\n"
-        "- After each answer: fill that field, ask next field\n"
-        "- Always include FILL for field just answered\n"
-        "- Only include NAVIGATE on the FIRST response when starting a form — never on follow-up fields\n"
-        "- After navigating to the form once, subsequent field responses should ONLY have FILL, no NAVIGATE\n"
+        "- Only include NAVIGATE on the FIRST response when starting a form\n"
         "- Required: first_name, last_name, username, email, position, department, basic_salary, gender, date_hired\n"
-        "- When all required fields done: 'The form is ready, please review and submit.'\n"
         "- Same guided flow for leave: leave_type -> start_date -> end_date -> reason\n"
-        "- Same for payroll: month -> year\n"
-        "- Only fill ONE field per response unless user gave multiple\n\n"
-        "GUIDED EXAMPLE:\n"
-        "User: 'Add new employee'\n"
-        "Sphere: Sure! What is their first name?\n"
-        "NAVIGATE:/employees/create/|Opening add employee form...\n\n"
-        "User: 'John'\n"
-        "Sphere: Got it! What is their last name?\n"
-        "FILL:add_employee|first_name=John\n\n"
-        "User: 'Dela Cruz'\n"
-        "Sphere: What username for login?\n"
-        "FILL:add_employee|last_name=Dela Cruz\n\n"
-        "User: 'For date of hired make it May 25 2026'\n"
-        "FILL:add_employee|date_hired=2026-05-25\n\n"
-        "User: 'Set date hired to June 1 2026'\n"
-        "FILL:add_employee|date_hired=2026-06-01\n\n"
-        "User: 'Date of birth is January 15 1995'\n"
-        "FILL:add_employee|date_of_birth=1995-01-15\n\n"
-        "User: 'Salary is 25000'\n"
-        "FILL:add_employee|basic_salary=25000\n\n"
-        "User: 'Department is IT'\n"
-        "FILL:add_employee|department=IT\n\n"
-        "User: 'Position is developer'\n"
-        "FILL:add_employee|position=Developer\n\n"
-        "IMPORTANT: Any phrase like 'set X to Y', 'make X Y', 'X is Y', 'for X make it Y' should be treated as a FILL command.\n"
-        "Convert all dates to YYYY-MM-DD format before putting in FILL command.\n"
-        "Never ask clarifying questions for field values — just fill them directly.\n\n"
-        "IMPORTANT: After the first NAVIGATE to the form, do NOT include NAVIGATE again for subsequent fields.\n"
-        "Only include FILL for the field just answered. No NAVIGATE on follow-up fields.\n\n"
+        "- Any phrase like 'set X to Y', 'make X Y', 'X is Y' = FILL command\n"
+        "- Convert all dates to YYYY-MM-DD format\n\n"
         "=== NAVIGATION COMMANDS ===\n"
         "NAVIGATE:/url/|Your message here\n\n"
-        "IMPORTANT NAVIGATION RULES:\n"
-        "- Admin users do NOT have a personal profile page — navigate to /employees/ instead\n"
-        "- NEVER send admin to /my-profile/ — use /employees/ for admin profile\n"
-        "- NEVER put employee IDs, names, or data in navigation URLs\n"
-        "- Employee list is always: /employees/\n"
-        "- To view a specific employee, navigate to /employees/ and let the user click\n"
-        "- NEVER generate URLs like /employees/2026-02/ or /employees/john/\n"
-        "- Only use the exact URLs listed below\n\n"
+        "IMPORTANT: Admin users do NOT have /my-profile/ — use /employees/ instead.\n"
+        "NEVER generate URLs like /employees/2026-02/ or /employees/john/\n\n"
         f"- Dashboard: {dashboard_url}\n"
         f"- Attendance: {attendance_url}\n"
         f"- Leave (all): {leave_url}?status=all\n"
@@ -412,12 +521,6 @@ def ask_claude(user_message, user, is_admin, form_state=None, current_url=''):
         f"- Leave (approved): {leave_url}?status=approved\n"
         f"- Leave (rejected): {leave_url}?status=rejected\n"
         f"- Leave (cancelled): {leave_url}?status=cancelled\n"
-        "LEAVE NAVIGATION EXAMPLES:\n"
-        f"User: 'View all leave requests' -> NAVIGATE:{leave_url}?status=all|Opening all leave requests...\n"
-        f"User: 'View pending leaves' -> NAVIGATE:{leave_url}?status=pending|Opening pending leave requests...\n"
-        f"User: 'View approved leaves' -> NAVIGATE:{leave_url}?status=approved|Opening approved leave requests...\n"
-        f"User: 'View rejected leaves' -> NAVIGATE:{leave_url}?status=rejected|Opening rejected leave requests...\n"
-        f"User: 'View cancelled leaves' -> NAVIGATE:{leave_url}?status=cancelled|Opening cancelled leave requests...\n"
         f"- Payroll: {payroll_url}\n"
         f"- Profile: {'/employees/' if is_admin else '/my-profile/'}\n"
         "- Schedule: /my-schedule/\n"
@@ -426,24 +529,30 @@ def ask_claude(user_message, user, is_admin, form_state=None, current_url=''):
         f"- File Leave: {leave_request_url}\n"
         "- Logout: /logout/\n"
         f"{admin_nav}\n"
+        "=== FILTER COMMANDS ===\n"
+        "FILTER:field=value|field2=value2\n"
+        "Fields: search, department, status, date, clear=true\n"
+        "Examples:\n"
+        "User: 'search John' -> FILTER:search=John\n"
+        "User: 'filter by IT department' -> FILTER:department=IT\n"
+        "User: 'show absent employees' -> FILTER:status=absent\n"
+        "User: 'clear filters' -> FILTER:clear=true\n\n"
         "=== HR POLICIES ===\n"
         "- Work: Mon-Fri, 8AM-5PM. Late after 8AM.\n"
-        "- Leave: File 2 days advance. No weekends. No overlap. Needs admin approval.\n"
+        "- Leave: File 2 days advance. No weekends. Sick/Emergency Leave exempt from 2-day rule.\n"
         "- Sick Leave: 20 days/year. Vacation: 10. Emergency: 3. Maternity: 10 (female). Paternity: 10 (male).\n"
         "- Payroll: monthly.\n\n"
         "=== RESPONSE STYLE ===\n"
-        "- Warm, professional, concise. Bullet points for lists.\n"
+        "- Warm, professional, concise.\n"
         "- Filipino for Filipino/Taglish input.\n"
-        "- Never say 'Based on the data provided'.\n"
-        "- Speak naturally.\n\n"
+        "- Never say 'Based on the data provided'.\n\n"
         "=== INTENT DETECTION ===\n"
-        "End every response with on a new line:\n"
-        "INTENT:INTENT_NAME\n\n"
-        "Intents: GREETING, HELP, CHECK_LEAVE_BALANCE, VIEW_ATTENDANCE, CHECK_ABSENCE, CHECK_LATE,\n"
-        "VIEW_SCHEDULE, VIEW_EMPLOYEE_PROFILE, VIEW_PAYSLIP, FILE_LEAVE, CHECK_LEAVE_STATUS,\n"
-        "ADMIN_VIEW_ALL_EMPLOYEES, ADMIN_VIEW_ABSENCES, ADMIN_VIEW_LATE, ADMIN_VIEW_PRESENT,\n"
-        "ADMIN_CHECK_PAYROLL, ADMIN_PENDING_LEAVES, ADMIN_GENERATE_REPORT, ADMIN_DEPT_SUMMARY,\n"
-        "NAV_DASHBOARD, NAV_ATTENDANCE, NAV_LEAVE, NAV_PAYROLL, NAV_PROFILE, NAV_SCHEDULE,\n"
+        "End every response with: INTENT:INTENT_NAME\n"
+        "Intents: GREETING, HELP, CHECK_LEAVE_BALANCE, VIEW_ATTENDANCE, CHECK_ABSENCE, CHECK_LATE, "
+        "VIEW_SCHEDULE, VIEW_EMPLOYEE_PROFILE, VIEW_PAYSLIP, FILE_LEAVE, CHECK_LEAVE_STATUS, "
+        "ADMIN_VIEW_ALL_EMPLOYEES, ADMIN_VIEW_ABSENCES, ADMIN_VIEW_LATE, ADMIN_VIEW_PRESENT, "
+        "ADMIN_CHECK_PAYROLL, ADMIN_PENDING_LEAVES, ADMIN_GENERATE_REPORT, ADMIN_DEPT_SUMMARY, "
+        "NAV_DASHBOARD, NAV_ATTENDANCE, NAV_LEAVE, NAV_PAYROLL, NAV_PROFILE, NAV_SCHEDULE, "
         "NAV_CLOCK_IN, NAV_CLOCK_OUT, NAV_LOGOUT, FORM_FILL, UNKNOWN\n"
     )
 
@@ -485,37 +594,55 @@ def ask_claude(user_message, user, is_admin, form_state=None, current_url=''):
         spoken = parts[1].strip() if len(parts) > 1 else 'Navigating...'
         response_text = ' '.join(other_lines).strip() or spoken
 
-    # Resolve employee name in message to PK for direct navigation
+    # ── Post-Claude employee name resolution ───────────────────────────────────
     if is_admin:
         text_lower = user_message.lower()
         is_edit = any(w in text_lower for w in ['edit', 'update', 'modify', 'change profile', 'edit profile', 'click edit'])
         is_view = any(w in text_lower for w in ['view', 'show', 'open', 'see'])
+        is_leave_context = any(w in text_lower for w in [
+            'leave request', 'leave requests', 'leave record', 'pending leave',
+            'approved leave', 'rejected leave', 'cancelled leave', 'leaving request', 'leave'
+        ])
+        is_profile_context = any(w in text_lower for w in [
+            'profile', 'employee detail', 'employee info', 'employee record',
+            'personal info', 'employment details'
+        ])
+        is_filter_context = any(w in text_lower for w in [
+            'search', 'filter', 'show', 'find', 'clear', 'department', 'status'
+        ])
+        is_payroll_context = any(w in text_lower for w in [
+            'payroll', 'salary', 'pay slip', 'payslip'
+        ]) or '/payroll' in current_url
 
-        if is_edit or is_view:
-            matched_pk = None
-
-            # Try to match employee name from message
-            all_emps = Employee.objects.filter(status='active')
-            for emp in all_emps:
-                full_name = emp.get_full_name().lower()
-                first = emp.first_name.lower()
-                last = emp.last_name.lower()
-                if full_name in text_lower or (first in text_lower and last in text_lower):
-                    matched_pk = emp.pk
-                    break
-
-            # If no name in message, extract PK from current URL
-            if not matched_pk and current_url:
-                import re
-                match = re.search(r'/employees/(\d+)/', current_url)
-                if match:
-                    matched_pk = int(match.group(1))
-
-            if matched_pk:
-                if is_edit:
-                    navigate_url = f'/employees/{matched_pk}/edit/'
+        # Override: if Claude sent to employees but context is leave, fix routing
+        if is_leave_context and not is_profile_context and not is_filter_context and navigate_url and '/employees/' in navigate_url:
+            navigate_url = None
+            emp = _match_employee(text_lower)
+            if emp:
+                is_review = any(w in text_lower for w in [
+                    'review', 'approve', 'reject', 'pending', 'check', 'leave request'
+                ])
+                if is_review:
+                    pl = LeaveRequest.objects.filter(employee=emp, status='pending').order_by('-filed_on').first()
+                    navigate_url = f'/leave/{pl.pk}/review/' if pl else f'/leave/?employee={emp.pk}&status=all'
                 else:
-                    navigate_url = f'/employees/{matched_pk}/'
+                    navigate_url = f'/leave/?employee={emp.pk}&status=all'
+
+        # Normal employee profile/edit navigation — only on employee pages
+        elif not is_leave_context and not is_payroll_context and not is_filter_context and (is_edit or is_view) and '/payroll' not in current_url and '/attendance' not in current_url and '/leave' not in current_url and '/reports' not in current_url:
+            emp = _match_employee(text_lower)
+            if not emp and current_url:
+                m = re.search(r'/employees/(\d+)/', current_url)
+                if m:
+                    try:
+                        emp = Employee.objects.get(pk=int(m.group(1)))
+                    except Employee.DoesNotExist:
+                        pass
+            if emp:
+                if is_edit:
+                    navigate_url = f'/employees/{emp.pk}/edit/'
+                else:
+                    navigate_url = f'/employees/{emp.pk}/'
 
     if fill_line:
         try:
@@ -530,7 +657,7 @@ def ask_claude(user_message, user, is_admin, form_state=None, current_url=''):
         except Exception:
             fill_data = None
 
-    # Extract submit command
+    # Extract submit/cancel commands
     submit_form = None
     cancel_form = None
     for line in lines:
@@ -539,48 +666,53 @@ def ask_claude(user_message, user, is_admin, form_state=None, current_url=''):
         if line.startswith('CANCEL:'):
             cancel_form = line.replace('CANCEL:', '').strip()
 
-    # Detect print/export commands for reports page
+    # Extract filter command
+    filter_data = None
+    for line in lines:
+        if line.startswith('FILTER:'):
+            try:
+                filter_parts = line.replace('FILTER:', '').split('|')
+                filter_data = {}
+                for part in filter_parts:
+                    if '=' in part:
+                        key, val = part.split('=', 1)
+                        filter_data[key.strip()] = val.strip()
+            except Exception:
+                filter_data = None
+
+   # Detect print/export commands — require explicit print/export intent
     trigger_action = None
-    text_lower = user_message.lower()
-    has_print = any(w in text_lower for w in ['print', 'pdf'])
-    has_export = any(w in text_lower for w in ['export', 'csv', 'download'])
+    tl = user_message.lower()
+    has_print = any(w in tl for w in ['print pdf', 'print report', 'print payroll', 'print attendance', 'print directory', 'download pdf', 'save pdf', 'pdf'])
+    has_export = any(w in tl for w in ['export csv', 'download csv', 'export payroll', 'export attendance', 'export directory', 'export report', 'export'])
+    # Only trigger if clearly a print/export command
+    if has_print and not any(w in tl for w in ['print pdf', 'print report', 'print payroll', 'print attendance', 'pdf']):
+        has_print = False
+    if has_export and not any(w in tl for w in ['export csv', 'export payroll', 'export attendance', 'export']):
+        has_export = False
     if has_print or has_export:
         if has_print:
-            if 'payroll' in text_lower or 'summary' in text_lower:
+            if 'payroll' in tl or 'summary' in tl:
                 trigger_action = 'print_payroll'
-            elif 'directory' in text_lower:
+            elif 'directory' in tl:
                 trigger_action = 'print_directory'
-            else:
+            elif 'attendance' in tl:
                 trigger_action = 'print_attendance'
-        elif has_export:
-            if 'payroll' in text_lower or 'summary' in text_lower:
-                trigger_action = 'export_payroll'
-            elif 'directory' in text_lower:
-                trigger_action = 'export_directory'
             else:
+                trigger_action = 'print_current'
+        elif has_export:
+            if 'payroll' in tl or 'summary' in tl:
+                trigger_action = 'export_payroll'
+            elif 'directory' in tl:
+                trigger_action = 'export_directory'
+            elif 'attendance' in tl:
                 trigger_action = 'export_attendance'
+            else:
+                trigger_action = 'export_current'
         navigate_url = None
-        return response_text, intent, navigate_url, fill_data, submit_form, cancel_form, trigger_action
-    if any(w in text_lower for w in ['print', 'pdf', 'print pdf', 'print report']):
-        if 'attendance' in text_lower:
-            trigger_action = 'print_attendance'
-        elif 'payroll' in text_lower:
-            trigger_action = 'print_payroll'
-        elif 'directory' in text_lower or 'employee' in text_lower:
-            trigger_action = 'print_directory'
-        else:
-            trigger_action = 'print_current'
-    elif any(w in text_lower for w in ['export', 'csv', 'download']):
-        if 'attendance' in text_lower:
-            trigger_action = 'export_attendance'
-        elif 'payroll' in text_lower:
-            trigger_action = 'export_payroll'
-        elif 'directory' in text_lower or 'employee' in text_lower:
-            trigger_action = 'export_directory'
-        else:
-            trigger_action = 'export_current'
+        return response_text, intent, navigate_url, fill_data, submit_form, cancel_form, trigger_action, filter_data
 
-    return response_text, intent, navigate_url, fill_data, submit_form, cancel_form, trigger_action
+    return response_text, intent, navigate_url, fill_data, submit_form, cancel_form, trigger_action, filter_data
 
 
 @login_required
@@ -608,7 +740,7 @@ def sphere_chat(request):
         current_url = data.get('current_url', '')
 
         form_state = request.session.get('sphere_form_state', None)
-        response_text, intent, navigate_url, fill_data, submit_form, cancel_form, trigger_action = ask_claude(
+        response_text, intent, navigate_url, fill_data, submit_form, cancel_form, trigger_action, filter_data = ask_claude(
             text, request.user, is_admin, form_state, current_url
         )
 
@@ -627,7 +759,6 @@ def sphere_chat(request):
             if 'sphere_form_state' in request.session:
                 del request.session['sphere_form_state']
 
-        # Clear form state after submit
         if submit_form:
             if 'sphere_form_state' in request.session:
                 del request.session['sphere_form_state']
@@ -657,6 +788,8 @@ def sphere_chat(request):
             'fill_data': fill_data,
             'submit_form': submit_form,
             'cancel_form': cancel_form,
+            'trigger_action': trigger_action,
+            'filter_data': filter_data,
         })
 
     except Exception as e:
@@ -670,7 +803,10 @@ def sphere_chat(request):
             'fill_data': None,
             'submit_form': None,
             'cancel_form': None,
+            'trigger_action': None,
+            'filter_data': None,
         })
+
 
 @login_required
 def sphere_logs(request):

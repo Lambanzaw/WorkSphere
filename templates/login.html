@@ -312,6 +312,19 @@
     }
   </style>
 </head>
+<script>
+function toggleLoginPassword() {
+  var input = document.getElementById('{{ form.password.id_for_label }}');
+  var btn = document.getElementById('loginShowBtn');
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = 'Hide';
+  } else {
+    input.type = 'password';
+    btn.textContent = 'Show';
+  }
+}
+</script>
 <body>
 
 <div class="left-panel">
@@ -374,7 +387,13 @@
 
       <div class="form-group">
         <label class="form-label" for="{{ form.password.id_for_label }}">Password</label>
-        {{ form.password }}
+        <div style="position:relative;">
+          {{ form.password }}
+          <button type="button" onclick="toggleLoginPassword()" id="loginShowBtn"
+            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:.82rem;font-weight:600;color:#6366f1;padding:0;">
+            Show
+          </button>
+        </div>
         {% if form.password.errors %}
           {% for error in form.password.errors %}
             <span class="form-error">{{ error }}</span>

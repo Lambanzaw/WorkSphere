@@ -13,14 +13,15 @@ class CoreConfig(AppConfig):
         logger = logging.getLogger(__name__)
 
         scheduler = BackgroundScheduler()
+        import pytz
         scheduler.add_job(
             auto_mark_absent,
-            trigger=CronTrigger(hour=0, minute=5),  # runs at 12:05 AM daily
+            trigger=CronTrigger(hour=0, minute=5, timezone=pytz.timezone('Asia/Manila')),
             id='auto_mark_absent',
             replace_existing=True,
         )
         scheduler.start()
-        logger.info("Scheduler started — auto-absent will run at 12:05 AM daily.")
+        logger.info("Scheduler started — auto-absent will run at 12:05 AM PHT daily.")
         import os
 from django.contrib.auth import get_user_model
 

@@ -19,7 +19,7 @@ from .forms import LeaveRequestForm, LeaveReviewForm
 from .decorators import admin_required, employee_required, get_client_ip
 
 
-# ─── EMPLOYEE: FILE LEAVE ──────────────────────────────────────────────────────
+#  EMPLOYEE: FILE LEAVE 
 @employee_required
 def leave_create(request):
     """Employee files a new leave request."""
@@ -36,7 +36,7 @@ def leave_create(request):
 
                 messages.success(
                     request,
-                    f"✅ Leave request submitted for {leave.start_date} to {leave.end_date}. "
+                    f"Leave request submitted for {leave.start_date} to {leave.end_date}. "
                     f"Pending admin approval."
                 )
                 return redirect('my_leaves')
@@ -57,7 +57,7 @@ def leave_create(request):
     })
 
 
-# ─── EMPLOYEE: MY LEAVES ───────────────────────────────────────────────────────
+#  EMPLOYEE: MY LEAVES 
 @employee_required
 def my_leaves(request):
     """Employee views their leave requests."""
@@ -87,7 +87,7 @@ def my_leaves(request):
     return render(request, 'leave/my_leaves.html', context)
 
 
-# ─── EMPLOYEE: CANCEL LEAVE ────────────────────────────────────────────────────
+#  EMPLOYEE: CANCEL LEAVE 
 @employee_required
 def leave_cancel(request, pk):
     """Employee cancels a pending leave request."""
@@ -108,7 +108,7 @@ def leave_cancel(request, pk):
     return render(request, 'leave/cancel_confirm.html', {'leave': leave})
 
 
-# ─── ADMIN: ALL LEAVE REQUESTS ─────────────────────────────────────────────────
+#  ADMIN: ALL LEAVE REQUESTS 
 @admin_required
 def admin_leave_list(request):
     status_filter = request.GET.get('status', 'pending')
@@ -121,6 +121,10 @@ def admin_leave_list(request):
 
     if status_filter and status_filter != 'all':
         leaves = leaves.filter(status=status_filter)
+    # Filter by employee PK (used by Sphere voice navigation)
+    emp_pk = request.GET.get('employee', '')
+    if emp_pk:
+        leaves = leaves.filter(employee__pk=emp_pk)
     if search_query:
         leaves = leaves.filter(employee__user__first_name__icontains=search_query) | \
                  leaves.filter(employee__user__last_name__icontains=search_query)
@@ -134,11 +138,11 @@ def admin_leave_list(request):
     }
 
     tabs = [
-        ('pending',   'Pending',   '⏳'),
-        ('approved',  'Approved',  '✅'),
-        ('rejected',  'Rejected',  '❌'),
-        ('cancelled', 'Cancelled', '🚫'),
-        ('all',       'All',       '📋'),
+        ('pending',   'Pending',   ''),
+        ('approved',  'Approved',  ''),
+        ('rejected',  'Rejected',  ''),
+        ('cancelled', 'Cancelled', ''),
+        ('all',       'All',       ''),
     ]
 
     context = {
@@ -153,7 +157,7 @@ def admin_leave_list(request):
     return render(request, 'leave/admin_list.html', context)
 
 
-# ─── ADMIN: REVIEW LEAVE ──────────────────────────────────────────────────────
+#  ADMIN: REVIEW LEAVE 
 @admin_required
 def admin_leave_review(request, pk):
     """

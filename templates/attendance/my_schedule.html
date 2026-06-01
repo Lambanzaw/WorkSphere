@@ -105,7 +105,6 @@
 
 <!-- Legend -->
 <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
-  <span style="font-size:.8rem;font-weight:600;color:var(--text-muted);">Legend:</span>
   <span style="display:inline-flex;align-items:center;gap:5px;font-size:.78rem;">
     <span style="width:12px;height:12px;border-radius:3px;background:#D1FAE5;display:inline-block;"></span> Present
   </span>
@@ -117,12 +116,6 @@
   </span>
   <span style="display:inline-flex;align-items:center;gap:5px;font-size:.78rem;">
     <span style="width:12px;height:12px;border-radius:3px;background:#DBEAFE;display:inline-block;"></span> On Leave
-  </span>
-  <span style="display:inline-flex;align-items:center;gap:5px;font-size:.78rem;">
-    <span style="width:12px;height:12px;border-radius:3px;background:#F3F4F6;display:inline-block;"></span> Weekend
-  </span>
-  <span style="display:inline-flex;align-items:center;gap:5px;font-size:.78rem;">
-    <span style="width:12px;height:12px;border-radius:3px;background:#EEF2FF;border:2px solid #4F46E5;display:inline-block;"></span> Today
   </span>
 </div>
 
@@ -259,6 +252,16 @@
           </div>
         </div>
         {% else %}
+        {% if day.is_today %}
+        <div class="cal-cell" style="background:#EEF2FF;border-color:#4F46E5;box-shadow:0 0 0 2px #4F46E5;">
+          <span class="cal-day-name">{{ day.date|date:"D" }}</span>
+          <div class="cal-day-info">
+            <div class="cal-day-num" style="color:#4F46E5;">{{ day.day }}</div>
+            <div class="cal-label" style="color:#4F46E5;">Today</div>
+            <div class="cal-sub" style="color:#6366f1;">8AM–5PM</div>
+          </div>
+        </div>
+        {% else %}
         <div class="cal-cell" style="background:#FEE2E2;border-color:#FECACA;">
           <span class="cal-day-name" style="color:#991B1B;">{{ day.date|date:"D" }}</span>
           <div class="cal-day-info">
@@ -267,6 +270,7 @@
             <div class="cal-sub" style="color:#991B1B;">No record</div>
           </div>
         </div>
+        {% endif %}
         {% endif %}
       {% endif %}
 

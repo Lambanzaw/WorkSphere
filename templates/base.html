@@ -478,14 +478,15 @@ async function sphereSendCommand(text) {
     var res = await fetch('/sphere/chat/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': swCsrf },
-      body: JSON.stringify({ message: text, is_voice: true, current_url: window.location.pathname })
+      body: JSON.stringify({ message: text, is_voice: true, current_url: window.location.pathname + window.location.search })
     });
     var data = await res.json();
+    console.log('Sphere:', data);
 
     if (data.cancel_form) {
       sessionStorage.removeItem('sphere_fill');
       setTimeout(function() {
-        var cancelBtn = document.querySelector('a.btn-outline, a[href*="employees"], button.btn-outline');
+        var cancelBtn = document.querySelector('a.btn-outline, button.btn-outline');
         if (cancelBtn) cancelBtn.click();
         else window.history.back();
       }, 500);
@@ -494,10 +495,7 @@ async function sphereSendCommand(text) {
     if (data.fill_data) {
       sphereApplyFill(data.fill_data.form, data.fill_data.fields);
       var existingFill = null;
-      try {
-        var stored = sessionStorage.getItem('sphere_fill');
-        if (stored) existingFill = JSON.parse(stored);
-      } catch(e) {}
+      try { var stored = sessionStorage.getItem('sphere_fill'); if (stored) existingFill = JSON.parse(stored); } catch(e) {}
       if (existingFill && existingFill.form === data.fill_data.form) {
         Object.assign(existingFill.fields, data.fill_data.fields);
         sessionStorage.setItem('sphere_fill', JSON.stringify(existingFill));
@@ -507,65 +505,127 @@ async function sphereSendCommand(text) {
     }
 
     if (data.submit_form) {
-      sphereShowToast('Saving...', 2000);
+      sphereShowToast('Processing...', 2000);
       sessionStorage.removeItem('sphere_fill');
       setTimeout(function() {
-        var btn = document.querySelector('button[type="submit"]');
-        if (btn) {
-          btn.click();
-        } else {
-          sphereShowToast('Submit button not found.', 2000);
+        if (data.submit_form === 'approve_leave') {
+          var btn = null;
+          document.querySelectorAll('button').forEach(function(b) { if (b.textContent.toLowerCase().includes('approve')) btn = b; });
+          if (btn) { btn.click(); return; }
         }
+        if (data.submit_form === 'reject_leave') {
+          var btn = null;
+          document.querySelectorAll('button').forEach(function(b) { if (b.textContent.toLowerCase().includes('reject')) btn = b; });
+          if (btn) { btn.click(); return; }
+        }
+        if (data.submit_form === 'finalize_payroll') {
+          if (typeof openFinalizeModal === 'function') { openFinalizeModal(); return; }
+          var btn = null;
+          document.querySelectorAll('button').forEach(function(b) { if (b.textContent.toLowerCase().includes('finalize')) btn = b; });
+          if (btn) { btn.click(); return; }
+        }
+        if (data.submit_form === 'preview_payroll') {
+          var btn = null;
+          document.querySelectorAll('button[type="submit"]').forEach(function(b) { if (b.textContent.toLowerCase().includes('preview')) btn = b; });
+          if (!btn) btn = document.querySelector('button[type="submit"]');
+          if (btn) { btn.click(); return; }
+        }
+        var btn = document.querySelector('button[type="submit"]');
+        if (btn) btn.click();
+        else sphereShowToast('Submit button not found.', 2000);
       }, 800);
-      return; // Stop further processing
+      return;
     }
 
     if (data.fill_data && !data.navigate_url) {
       sphereShowToast('Done.', 1500);
     }
+
+    if (data.filter_data) {
+      var fd = data.filter_data;
+      if (fd.clear === 'true') {
+        var form = document.querySelector('form[method="get"]');
+        if (form) {
+          form.querySelectorAll('input[type="text"], input[type="date"]').forEach(function(el) { el.value = ''; });
+          form.querySelectorAll('select').forEach(function(el) { el.selectedIndex = 0; });
+          form.submit();
+        }
+      } else {
+        if (fd.search !== undefined) {
+          var el = document.querySelector('input[name="search"], input[name="q"]');
+          if (el) el.value = fd.search;
+        }
+        if (fd.department) {
+          var el = document.querySelector('select[name="department"]');
+          if (el) { for (var i=0;i<el.options.length;i++) { if (el.options[i].text.toLowerCase().includes(fd.department.toLowerCase())) { el.selectedIndex=i; break; } } }
+        }
+        if (fd.status) {
+          var el = document.querySelector('select[name="status"]');
+          if (el) { for (var i=0;i<el.options.length;i++) { if (el.options[i].value.toLowerCase()===fd.status.toLowerCase()) { el.selectedIndex=i; break; } } }
+        }
+        if (fd.date) {
+          var el = document.querySelector('input[name="date"]');
+          if (el) el.value = fd.date;
+        }
+        setTimeout(function() {
+          var form = document.querySelector('form[method="get"]');
+          if (form) form.submit();
+        }, 500);
+        sphereShowToast('Filtering...', 1500);
+      }
+      return;
+    }
+
     if (data.trigger_action) {
       var action = data.trigger_action;
       setTimeout(function() {
-        var search = window.location.search;
-        var reportType = search.includes('payroll') ? 'payroll' : search.includes('directory') ? 'directory' : 'attendance';
-
-        if (action.startsWith('print')) {
-          var printType = action === 'print_current' ? reportType : action.replace('print_', '');
-          if (printType === 'attendance' && typeof printAttendancePDF === 'function') printAttendancePDF();
-          else if (printType === 'payroll' && typeof printPayrollPDF === 'function') printPayrollPDF();
-          else if (printType === 'directory' && typeof printDirectoryPDF === 'function') printDirectoryPDF();
-          else if (typeof printAttendancePDF === 'function') printAttendancePDF();
-        } else if (action.startsWith('export')) {
-          var exportType = action === 'export_current' ? reportType : action.replace('export_', '');
-          var csvBtn = document.querySelector('a[href*="export_' + exportType + '"], a[href*="export-' + exportType + '"]');
-          if (!csvBtn) csvBtn = document.querySelector('a[href*="export"]');
-          if (csvBtn) {
-            window.location.href = csvBtn.href;
-          } else {
-            sphereShowToast('Export button not found on this page.', 2000);
-            return;
-          }
+        var path = window.location.pathname;
+        var resolvedType = action.replace('print_','').replace('export_','');
+        if (resolvedType === 'current') {
+          resolvedType = path.includes('payroll') ? 'payroll' : path.includes('attendance') ? 'attendance' : 'directory';
         }
-        sphereShowToast('Done.', 1500);
+        if (action.startsWith('print')) {
+          if (resolvedType === 'payroll' && typeof printPayrollReport === 'function') {
+            printPayrollReport();
+          } else if (resolvedType === 'attendance' && typeof printAttendancePDF === 'function') {
+            printAttendancePDF();
+          } else if (resolvedType === 'directory' && typeof printDirectoryPDF === 'function') {
+            printDirectoryPDF();
+          } else if (typeof printPayrollReport === 'function') {
+            printPayrollReport();
+          } else {
+            window.print();
+          }
+          sphereShowToast('Printing...', 2000);
+        } else if (action.startsWith('export')) {
+          if (resolvedType === 'payroll') {
+            var params = new URLSearchParams(window.location.search);
+            window.location.href = '/payroll/export/csv/?' + params.toString();
+          } else {
+            var csvBtn = document.querySelector('a[href*="export"]');
+            if (csvBtn) window.location.href = csvBtn.href;
+            else sphereShowToast('Export not available.', 2000);
+          }
+          sphereShowToast('Downloading...', 2000);
+        }
       }, 500);
+      return;
     }
 
-    if (!data.trigger_action && data.navigate_url) {
-      var currentFull = window.location.pathname + window.location.search;
-      var targetFull = data.navigate_url;
-      if (currentFull !== targetFull) {
-        var currentClean = window.location.pathname.replace(/\/$/, '');
-        var targetPath = data.navigate_url.split('?')[0].replace(/\/$/, '');
-        var formPages = ['/employees/create', '/leave/request', '/payroll/generate'];
-        var isLeavingForm = formPages.some(function(p) { return currentClean === p; });
-        var isGoingToForm = formPages.some(function(p) { return targetPath === p; });
-        if (isLeavingForm && !isGoingToForm) {
-          sessionStorage.removeItem('sphere_fill');
-        }
-        setTimeout(function() {
-          window.location.href = data.navigate_url;
-        }, 1200);
+    if (data.navigate_url) {
+      var currentPath = window.location.pathname;
+      var targetPath = data.navigate_url.split('?')[0].replace(/\/$/,'');
+      // Hard block: never go to employees from non-employee pages
+      var nonEmpPages = ['/leave', '/payroll', '/attendance', '/reports'];
+      if (nonEmpPages.some(function(p){ return currentPath.includes(p); }) && targetPath.startsWith('/employees')) {
+        return;
       }
+      var currentClean = currentPath.replace(/\/$/,'');
+      var formPages = ['/employees/create', '/leave/request', '/payroll/generate'];
+      if (formPages.some(function(p){ return currentClean===p; }) && !formPages.some(function(p){ return targetPath===p; })) {
+        sessionStorage.removeItem('sphere_fill');
+      }
+      setTimeout(function() { window.location.href = data.navigate_url; }, 1200);
     }
 
   } catch(e) {
@@ -601,13 +661,21 @@ function sphereApplyFill(form, fields) {
       'address':        function(v){ setInputVal('id_address', v); },
     },
     'generate_payroll': {
-      'month': function(v){ setSelectByVal('id_month', v); },
-      'year':  function(v){ setSelectByVal('id_year', v); },
+      'employee':         function(v){ setSelectByVal('id_employee', v); },
+      'month':            function(v){ setSelectByVal('id_month', v); },
+      'year':             function(v){ setSelectByVal('id_year', v); },
+      'bonuses':          function(v){ setInputVal('id_bonuses', v); },
+      'withholding_tax':  function(v){ setInputVal('id_withholding_tax', v); },
+      'other_deductions': function(v){ setInputVal('id_other_deductions', v); },
+      'notes':            function(v){ setInputVal('id_notes', v); },
     },
     'attendance_override': {
       'time_in':  function(v){ setInputVal('id_time_in', v); },
       'time_out': function(v){ setInputVal('id_time_out', v); },
       'status':   function(v){ setSelectByVal('id_status', v.toLowerCase()); },
+    },
+    'leave_review': {
+      'remarks': function(v){ setInputVal('id_remarks', v); setTextareaVal('id_remarks', v); },
     },
   };
   var formFields = fieldMap[form];
@@ -628,6 +696,17 @@ function setInputVal(id, val) {
 function setSelectByVal(id, val) {
   var el = document.getElementById(id);
   if (el) { el.value = val; el.dispatchEvent(new Event('change', { bubbles: true })); }
+}
+function setTextareaVal(id, val) {
+  var el = document.getElementById(id);
+  if (!el) {
+    // Try by name
+    el = document.querySelector('textarea[name="remarks"]');
+  }
+  if (el) {
+    el.value = val;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }
 }
 function setSelectByText(id, text) {
   var el = document.getElementById(id);

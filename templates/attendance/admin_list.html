@@ -20,7 +20,31 @@
         <label class="form-label">Date</label>
         <input type="date" name="date" value="{{ date_filter }}" class="form-control">
       </div>
-      <div style="min-width:200px;">
+      <div style="min-width:180px;">
+        <label class="form-label">Search</label>
+        <input type="text" name="search" value="{{ search }}" placeholder="Name, ID, email..." class="form-control">
+      </div>
+      <div style="min-width:160px;">
+        <label class="form-label">Department</label>
+        <select name="department" class="form-select">
+          <option value="">All Departments</option>
+          {% for d in departments %}
+          <option value="{{ d.pk }}" {% if dept_filter == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="min-width:140px;">
+        <label class="form-label">Status</label>
+        <select name="status" class="form-select">
+          <option value="">All Status</option>
+          <option value="present" {% if status_filter == 'present' %}selected{% endif %}>Present</option>
+          <option value="late" {% if status_filter == 'late' %}selected{% endif %}>Late</option>
+          <option value="absent" {% if status_filter == 'absent' %}selected{% endif %}>Absent</option>
+          <option value="half_day" {% if status_filter == 'half_day' %}selected{% endif %}>Half Day</option>
+          <option value="overtime" {% if status_filter == 'overtime' %}selected{% endif %}>Overtime</option>
+        </select>
+      </div>
+      <div style="min-width:180px;">
         <label class="form-label">Employee</label>
         <select name="employee" class="form-select">
           <option value="">All Employees</option>
@@ -173,11 +197,10 @@
 <div id="autoAbsentModal" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;">
   <div style="position:absolute;inset:0;background:rgba(0,0,0,0.4);" onclick="closeAutoAbsentModal()"></div>
   <div style="position:relative;background:var(--surface,#fff);border-radius:12px;padding:28px 32px;width:100%;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,0.18);">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-      <div style="width:36px;height:36px;border-radius:50%;background:#fef9c3;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ca8a04" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      </div>
-      <h3 style="font-size:1rem;font-weight:700;margin:0;color:var(--text-primary,#111);">Run Auto-Absent</h3>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <h3 style="font-size:1rem;font-weight:700;margin:0;color:var(--text-primary,#111);">
+        Run Auto-Absent
+      </h3>
     </div>
     <p style="font-size:.875rem;color:var(--text-secondary,#555);margin:12px 0 24px 0;line-height:1.5;">
       This will auto-mark absent for all employees with no attendance in the past <strong>30 weekdays</strong>. This action cannot be undone.
