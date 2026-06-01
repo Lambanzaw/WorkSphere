@@ -200,7 +200,7 @@
         {% if pending_leaves_count %}<span class="nav-badge">{{ pending_leaves_count }}</span>{% endif %}
       </a>
       <a href="{% url 'payroll_list' %}" class="nav-link {% if 'payroll' in request.resolver_match.url_name %}active{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <span style="width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0;">₱</span>
         Payroll
       </a>
       <a href="{% url 'reports' %}" class="nav-link {% if 'report' in request.resolver_match.url_name %}active{% endif %}">
@@ -231,7 +231,7 @@
         My Leaves
       </a>
       <a href="{% url 'my_payslips' %}" class="nav-link {% if 'payslip' in request.resolver_match.url_name %}active{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <span style="width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0;">₱</span>
         My Payslips
       </a>
       {% endif %}
@@ -437,9 +437,9 @@ function sphereToggleMic() {
   }
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   sphereRecognition = new SR();
-  sphereRecognition.continuous = true;
-  sphereRecognition.interimResults = true;
-  sphereRecognition.lang = 'en-US';
+  sphereRecognition.continuous = false;
+  sphereRecognition.interimResults = false;
+  sphereRecognition.lang = 'en-PH';
 
   sphereRecognition.onstart = function() {
     sphereRecording = true;
@@ -448,40 +448,10 @@ function sphereToggleMic() {
     sphereShowToast('Listening...', 0);
   };
 
-  var sphereLastTranscript = '';
-  var sphereSilenceTimer = null;
-
   sphereRecognition.onresult = function(e) {
-    var interim = '';
-    sphereLastTranscript = '';
-    for (var i = 0; i < e.results.length; i++) {
-      if (e.results[i].isFinal) {
-        sphereLastTranscript += e.results[i][0].transcript;
-      } else {
-        interim += e.results[i][0].transcript;
-      }
-    }
-    var display = sphereLastTranscript || interim;
-    sphereShowToast('Listening: "' + display + '"', 0);
-    if (sphereSilenceTimer) clearTimeout(sphereSilenceTimer);
-    sphereSilenceTimer = setTimeout(function() {
-      if (sphereLastTranscript.trim()) {
-        sphereRecognition.stop();
-      }
-    }, 2000);
-  };
-
-  sphereRecognition.onend = function() {
-    sphereRecording = false;
-    document.getElementById('sphereFab').classList.remove('recording');
-    document.getElementById('fabPulse').style.display = '';
-    if (sphereSilenceTimer) clearTimeout(sphereSilenceTimer);
-    if (sphereLastTranscript.trim()) {
-      sphereShowToast('Processing: "' + sphereLastTranscript + '"', 8000);
-      sphereSendCommand(sphereLastTranscript.trim());
-    } else {
-      sphereHideToast();
-    }
+    var transcript = e.results[0][0].transcript;
+    sphereShowToast('Processing: "' + transcript + '"', 8000);
+    sphereSendCommand(transcript);
   };
 
   sphereRecognition.onend = function() {
@@ -553,8 +523,34 @@ async function sphereSendCommand(text) {
     if (data.fill_data && !data.navigate_url) {
       sphereShowToast('Done.', 1500);
     }
+    if (data.trigger_action) {
+      var action = data.trigger_action;
+      setTimeout(function() {
+        var search = window.location.search;
+        var reportType = search.includes('payroll') ? 'payroll' : search.includes('directory') ? 'directory' : 'attendance';
 
-    if (data.navigate_url) {
+        if (action.startsWith('print')) {
+          var printType = action === 'print_current' ? reportType : action.replace('print_', '');
+          if (printType === 'attendance' && typeof printAttendancePDF === 'function') printAttendancePDF();
+          else if (printType === 'payroll' && typeof printPayrollPDF === 'function') printPayrollPDF();
+          else if (printType === 'directory' && typeof printDirectoryPDF === 'function') printDirectoryPDF();
+          else if (typeof printAttendancePDF === 'function') printAttendancePDF();
+        } else if (action.startsWith('export')) {
+          var exportType = action === 'export_current' ? reportType : action.replace('export_', '');
+          var csvBtn = document.querySelector('a[href*="export_' + exportType + '"], a[href*="export-' + exportType + '"]');
+          if (!csvBtn) csvBtn = document.querySelector('a[href*="export"]');
+          if (csvBtn) {
+            window.location.href = csvBtn.href;
+          } else {
+            sphereShowToast('Export button not found on this page.', 2000);
+            return;
+          }
+        }
+        sphereShowToast('Done.', 1500);
+      }, 500);
+    }
+
+    if (!data.trigger_action && data.navigate_url) {
       var currentFull = window.location.pathname + window.location.search;
       var targetFull = data.navigate_url;
       if (currentFull !== targetFull) {

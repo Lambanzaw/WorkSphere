@@ -3,8 +3,7 @@
 {% block page_title %}Admin Dashboard{% endblock %}
 
 {% block topbar_actions %}
-<div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
-  <button onclick="document.getElementById('adminSecurityModal').style.display='flex'" class="btn btn-outline btn-sm">Security Question</button>
+<div style="margin-left:auto;">
   <a href="{% url 'employee_create' %}" class="btn btn-primary btn-sm">+ Add Employee</a>
 </div>
 {% endblock %}
