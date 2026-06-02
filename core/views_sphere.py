@@ -396,6 +396,18 @@ def ask_claude(user_message, user, is_admin, form_state=None, current_url=''):
                     'UNKNOWN', None, None, None, None, None, _filter
                 )
 
+        # Intercept: Submit/create employee when on create page
+        _is_submit = any(w in _t for w in [
+            'click create employee', 'create employee', 'click create',
+            'submit', 'save employee', 'click save'
+        ])
+        if _is_submit and '/employees/create' in current_url:
+            return (
+                'Creating employee...',
+                'FORM_FILL', None, None,
+                'add_employee', None, None, None
+            )
+
         # Intercept: Click finalize for employee — go to payroll list with modal
         _is_finalize = any(w in _t for w in [
             'finalize', 'finalize payroll', 'click finalize', 'finalize for'
@@ -425,6 +437,8 @@ def ask_claude(user_message, user, is_admin, form_state=None, current_url=''):
                     'NAV_PAYROLL', '/payroll/',
                     None, None, None, None, None
                 )
+
+    
         
 
     # ── Build form context ─────────────────────────────────────────────────────
@@ -482,7 +496,7 @@ def ask_claude(user_message, user, is_admin, form_state=None, current_url=''):
         "LEAVE REQUEST (leave_request): leave_type, start_date (YYYY-MM-DD), end_date (YYYY-MM-DD), reason\n"
         "ADD EMPLOYEE (add_employee): username, employee_id, password, first_name, last_name, gender (male/female), date_of_birth (YYYY-MM-DD), civil_status (single/married/widowed/separated/divorced), nationality, email, contact_number, address, department, position, date_hired (YYYY-MM-DD), basic_salary\n"
         "EDIT EMPLOYEE (add_employee): same fields as ADD EMPLOYEE — use form_name 'add_employee' for edit form too\n\n"
-        "SUBMIT FORM: When user says 'submit', 'save', 'create employee', 'done', 'finish', 'complete', 'click submit', 'click save', 'save changes', 'update' — respond with: SUBMIT:add_employee\n"
+        "SUBMIT FORM: When user says 'submit', 'save', 'create employee', 'done', 'finish', 'complete', 'click submit', 'click save', 'save changes', 'update', 'click create employee', 'click create' — respond with: SUBMIT:add_employee\n"
         "PREVIEW PAYROLL: When user says 'click preview payroll', 'preview payroll', 'generate now', 'submit payroll', 'click preview' — respond with: SUBMIT:preview_payroll\n"
         "FINALIZE PAYROLL: When user says 'finalize payroll', 'click finalize', 'finalize this payroll' — respond with: SUBMIT:finalize_payroll\n"
         "APPROVE LEAVE: When user says 'approve leave', 'click approve', 'approve this leave' — respond with: SUBMIT:approve_leave\n"

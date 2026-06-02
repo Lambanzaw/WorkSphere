@@ -506,7 +506,6 @@ async function sphereSendCommand(text) {
 
     if (data.submit_form) {
       sphereShowToast('Processing...', 2000);
-      sessionStorage.removeItem('sphere_fill');
       setTimeout(function() {
         if (data.submit_form === 'approve_leave') {
           var btn = null;
@@ -531,8 +530,13 @@ async function sphereSendCommand(text) {
           if (btn) { btn.click(); return; }
         }
         var btn = document.querySelector('button[type="submit"]');
-        if (btn) btn.click();
-        else sphereShowToast('Submit button not found.', 2000);
+        if (btn) {
+          // Clear fill data right before clicking submit
+          sessionStorage.removeItem('sphere_fill');
+          btn.click();
+        } else {
+          sphereShowToast('Submit button not found.', 2000);
+        }
       }, 800);
       return;
     }
@@ -645,7 +649,7 @@ function sphereApplyFill(form, fields) {
     'add_employee': {
       'username':       function(v){ setInputVal('id_username', v); },
       'employee_id':    function(v){ setInputVal('id_employee_id', v); },
-      'password':       function(v){ setInputVal('id_password1', v); setInputVal('id_password2', v); },
+      'password':       function(v){ setInputVal('id_password1', v); setInputVal('id_password2', v); setInputVal('id_password', v); setInputVal('id_confirm_password', v); },
       'first_name':     function(v){ setInputVal('id_first_name', v); },
       'last_name':      function(v){ setInputVal('id_last_name', v); },
       'gender':         function(v){ setSelectByVal('id_gender', v.toLowerCase()); },

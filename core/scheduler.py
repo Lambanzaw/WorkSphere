@@ -1,36 +1,38 @@
 import logging
 from datetime import timedelta
 from django.utils import timezone
+import pytz
 
 logger = logging.getLogger(__name__)
 
 def auto_mark_absent():
     """
-    Runs daily at 12:05 AM Manila time (Asia/Manila).
-    Marks absent ONLY for yesterday — never for today or future dates.
+    Runs daily at midnight Manila time.
+    Marks absent ONLY for yesterday Manila time — never today or future.
     Only runs for weekdays (Mon-Fri).
     """
     from .models import Employee, Attendance
-    import pytz
 
-    pht = pytz.timezone('Asia/Manila')
-    now_pht = timezone.now().astimezone(pht)
-    yesterday = now_pht.date() - timedelta(days=1)
-    today = now_pht.date()
+    ph_tz = pytz.timezone('Asia/Manila')
+    now_ph = timezone.now().astimezone(ph_tz)
+    yesterday = now_ph.date() - timedelta(days=1)
+    today = now_ph.date()
 
-    # Safety check: never mark today or future dates as absent
+    # Safety: never mark today or future
     if yesterday >= today:
-        logger.warning(f"Safety check failed: yesterday={yesterday}, today={today}. Aborting.")
+        logger.warning(f"Safety check failed. Aborting.")
         return 0
 
-    # Only run for weekdays (Mon=0 to Fri=4)
+    # Skip weekends
     if yesterday.weekday() >= 5:
-        logger.info(f"Skipping auto-absent for {yesterday} (weekend)")
+        logger.info(f"Skipping weekend: {yesterday}")
         return 0
 
     active_employees = Employee.objects.filter(status='active')
     marked = 0
     for emp in active_employees:
+        if emp.date_hired > yesterday:
+            continue
         exists = Attendance.objects.filter(employee=emp, date=yesterday).exists()
         if not exists:
             Attendance.objects.create(
@@ -43,7 +45,6 @@ def auto_mark_absent():
                 notes='Auto-marked absent — no clock-in recorded.',
             )
             marked += 1
-            logger.info(f"Marked absent: {emp.get_full_name()} on {yesterday}")
 
-    logger.info(f"Auto-absent complete. {marked} records created for {yesterday}.")
+    logger.info(f"Auto-absent: {marked} records for {yesterday}.")
     return marked

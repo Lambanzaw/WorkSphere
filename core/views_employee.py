@@ -16,11 +16,13 @@ from .forms import EmployeeCreateForm, EmployeeEditForm, DepartmentForm
 from .decorators import admin_required, employee_required, get_client_ip
 from django.shortcuts import render, redirect
 
-# ─── ADMIN DASHBOARD ───────────────────────────────────────────────────────────
+# ADMIN DASHBOARD 
 @admin_required
 def admin_dashboard(request):
     """Admin dashboard with HR summary statistics."""
-    today = timezone.now().date()
+    import pytz
+    ph_tz = pytz.timezone('Asia/Manila')
+    today = timezone.now().astimezone(ph_tz).date()
 
     total_employees = Employee.objects.filter(status='active').count()
     attendance_today = __import__('core.models', fromlist=['Attendance']).Attendance.objects.filter(date=today).count()
@@ -60,17 +62,33 @@ def admin_dashboard(request):
     return render(request, 'admin_dashboard.html', context)
 
 
-# ─── EMPLOYEE DASHBOARD ────────────────────────────────────────────────────────
+# EMPLOYEE DASHBOARD 
 @employee_required
 def employee_dashboard(request):
     """Employee's personal dashboard."""
     from .models import Attendance, LeaveRequest, Payroll
+    import pytz
 
     employee = request.user.employee_profile
-    today = timezone.now().date()
+    ph_tz = pytz.timezone('Asia/Manila')
+    today = timezone.now().astimezone(ph_tz).date()
 
-    # Today's attendance
-    today_attendance = Attendance.objects.filter(employee=employee, date=today).first()
+    # Auto-mark yesterday as absent if no record (using Manila time)
+    from .views_attendance import auto_mark_absent_for_date
+    yesterday = today - __import__('datetime').timedelta(days=1)
+    if yesterday.weekday() < 5:
+        auto_mark_absent_for_date(yesterday)
+
+    # Only show today's attendance if employee actually clocked in
+    # Don't show auto-absent records as "today's attendance"
+    today_attendance = Attendance.objects.filter(
+        employee=employee,
+        date=today
+    ).exclude(
+        status='absent',
+        time_in=None,
+        admin_override=True
+    ).first()
 
     # Recent attendance (last 7 days)
     recent_attendance = Attendance.objects.filter(
@@ -96,7 +114,7 @@ def employee_dashboard(request):
     return render(request, 'employee_dashboard.html', context)
 
 
-# ─── EMPLOYEE LIST ─────────────────────────────────────────────────────────────
+#  EMPLOYEE LIST 
 @admin_required
 def employee_list(request):
     """Admin view of all employees with search/filter."""
@@ -138,7 +156,7 @@ def employee_list(request):
     return render(request, 'employees/list.html', context)
 
 
-# ─── EMPLOYEE CREATE ───────────────────────────────────────────────────────────
+#  EMPLOYEE CREATE 
 @admin_required
 def employee_create(request):
     """Create new employee with linked User account."""
@@ -192,7 +210,7 @@ def employee_create(request):
     return render(request, 'employees/create.html', {'form': form})
 
 
-# ─── EMPLOYEE DETAIL ───────────────────────────────────────────────────────────
+#  EMPLOYEE DETAIL 
 @admin_required
 def employee_detail(request, pk):
     """View full employee profile (admin)."""
@@ -217,7 +235,7 @@ def employee_detail(request, pk):
     return render(request, 'employees/detail.html', context)
 
 
-# ─── EMPLOYEE EDIT ─────────────────────────────────────────────────────────────
+#  EMPLOYEE EDIT 
 @admin_required
 def employee_edit(request, pk):
     """Edit employee details."""
@@ -253,7 +271,7 @@ def employee_edit(request, pk):
     return render(request, 'employees/edit.html', {'form': form, 'employee': employee})
 
 
-# ─── OWN PROFILE (EMPLOYEE) ────────────────────────────────────────────────────
+#  OWN PROFILE (EMPLOYEE) 
 @employee_required
 def my_profile(request):
     if request.user.is_staff or request.user.is_superuser:
